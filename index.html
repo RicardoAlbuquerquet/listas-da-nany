@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listas da Nany — Catálogo de Cirurgias (PDF A4)</title>
+<style>
+  :root{
+    --accent:#3f5161; --accent-d:#2c3a46;
+    --surface:#f4f5f6; --surface2:#fafbfc; --line:#d7dbdf;
+    --ink:#1f2937; --muted:#6b7280; --paper:#fff;
+    --ok:#1a7f37; --okbg:#e9f6ec; --warn:#9a6700; --warnbg:#fff5e0; --danger:#b42318;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:Arial, Helvetica, 'Segoe UI', system-ui, sans-serif;
+    background:linear-gradient(160deg,#eef0f2 0%, #e7eaed 100%);
+    color:var(--ink); min-height:100vh;
+  }
+  .appbar{ display:flex; align-items:center; gap:12px; padding:14px 24px;
+    background:linear-gradient(120deg,var(--accent),var(--accent-d)); color:#fff;
+    box-shadow:0 3px 12px rgba(0,0,0,.18); }
+  .appbar h1{ font-size:20px; margin:0; font-weight:700; }
+  .appbar .sub{ font-size:13px; opacity:.9; margin-left:auto; }
+
+  .layout{ display:grid; grid-template-columns:460px 1fr; gap:20px; padding:20px; align-items:start; }
+  @media (max-width:1040px){ .layout{ grid-template-columns:1fr; } }
+
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,.06); margin-bottom:18px; }
+  .card:last-child{ margin-bottom:0; }
+  .card h2{ margin:0 0 12px; font-size:15px; color:var(--accent-d); font-weight:700;
+    display:flex; align-items:center; gap:8px; }
+  .card h2 .badge{ margin-left:auto; }
+  label{ display:block; font-size:13px; font-weight:600; color:var(--muted); margin:0 0 6px; }
+
+  input[type=text], input[type=search]{ width:100%; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; font-size:14px; font-family:inherit; color:var(--ink); background:var(--surface2); outline:none; }
+  input[type=text]:focus, input[type=search]:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); background:#fff; }
+
+  textarea{ width:100%; border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    font-size:14px; font-family:inherit; color:var(--ink); background:var(--surface2);
+    outline:none; min-height:150px; resize:vertical; line-height:1.45; }
+  textarea:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); background:#fff; }
+
+  .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+  button{ border:none; border-radius:8px; padding:11px 18px; font-size:14px; font-weight:600;
+    cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; gap:7px; }
+  button:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-ghost{ background:var(--surface); color:var(--accent-d); border:1px solid var(--line); }
+  .btn-ghost:hover{ background:#eceef0; }
+  .btn-sm{ padding:7px 11px; font-size:13px; }
+  .btn-danger{ background:#fdeceb; color:var(--danger); border:1px solid #f3c6c2; }
+  .btn-danger:hover{ background:#fbe0dd; }
+
+  .badge{ font-size:12px; font-weight:700; color:var(--accent-d); background:var(--surface);
+    border:1px solid var(--line); border-radius:999px; padding:3px 10px; }
+
+  .status{ font-size:12.5px; color:var(--accent-d); font-weight:700; margin-top:12px; min-height:1em; }
+  .hint{ font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.55;
+    background:var(--surface2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .hint b{ color:var(--accent-d); }
+
+  details{ margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); padding:9px 12px; font-size:12.5px; color:var(--ink); }
+  details summary{ cursor:pointer; font-weight:700; color:var(--accent-d); }
+  details ul{ margin:9px 0 2px; padding-left:18px; line-height:1.6; }
+  details li{ margin-bottom:5px; }
+  details code{ background:#e9edf0; padding:1px 5px; border-radius:4px; font-family:Consolas,'Courier New',monospace; font-size:12px; }
+  .ok{ color:var(--ok); font-weight:700; } .no{ color:var(--danger); font-weight:700; }
+
+  /* catálogo */
+  .search-wrap{ position:relative; margin-bottom:12px; }
+  .cat-list{ display:flex; flex-direction:column; gap:8px; max-height:360px; overflow:auto; padding-right:2px; }
+  .cat-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px;
+    background:var(--surface2); padding:9px 10px; }
+  .cat-item .info{ flex:1; min-width:0; }
+  .cat-item .nm{ font-weight:700; color:var(--accent-d); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cat-item .meta{ font-size:11.5px; color:var(--muted); margin-top:1px; }
+  .cat-item .acts{ display:flex; gap:5px; flex-shrink:0; }
+  .icon-btn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 8px; font-size:13px; line-height:1; cursor:pointer; }
+  .icon-btn:hover{ background:var(--surface); }
+  .icon-btn.add{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+  .icon-btn.add:hover{ filter:brightness(1.08); }
+  .icon-btn.del:hover{ background:#fdeceb; color:var(--danger); border-color:#f3c6c2; }
+  .empty{ color:var(--muted); text-align:center; padding:24px 10px; font-size:13px; }
+
+  /* lista do dia */
+  .day-list{ display:flex; flex-direction:column; gap:7px; }
+  .day-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); padding:8px 10px; }
+  .day-item .ord{ font-weight:700; color:var(--muted); font-size:12px; width:30px; flex-shrink:0; }
+  .day-item .nm{ flex:1; font-weight:600; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .day-item .meta{ font-size:11.5px; color:var(--muted); flex-shrink:0; }
+
+  /* backup */
+  .backup-bar{ margin-top:14px; border-top:1px dashed var(--line); padding-top:12px; }
+  .backup-status{ font-size:12px; border-radius:8px; padding:8px 10px; margin-bottom:10px; line-height:1.5; }
+  .backup-status.on{ background:var(--okbg); color:var(--ok); border:1px solid #bfe3c8; }
+  .backup-status.off{ background:var(--warnbg); color:var(--warn); border:1px solid #f0dba8; }
+
+  /* pré-visualização */
+  .preview-card{ overflow:hidden; }
+  .pages{ display:flex; flex-direction:column; gap:16px; align-items:center; }
+  .pages svg{ width:100%; max-width:210mm; height:auto; display:block;
+    box-shadow:0 8px 30px rgba(0,0,0,.18); background:#fff; }
+
+  /* modal editor */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(20,28,36,.55); display:none;
+    align-items:flex-start; justify-content:center; padding:30px 16px; overflow:auto; z-index:50; }
+  .modal-overlay.show{ display:flex; }
+  .modal{ background:var(--paper); border-radius:12px; width:100%; max-width:560px;
+    box-shadow:0 20px 60px rgba(0,0,0,.35); padding:20px; }
+  .modal h3{ margin:0 0 4px; font-size:17px; color:var(--accent-d); }
+  .modal .sub2{ font-size:12.5px; color:var(--muted); margin:0 0 14px; }
+  .mat-head{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.03em; margin:10px 0 6px; }
+  .mat-head .h-nm{ flex:1; } .mat-head .h-qt{ width:150px; } .mat-head .h-x{ width:34px; }
+  .mat-rows{ display:flex; flex-direction:column; gap:7px; max-height:300px; overflow:auto; padding-right:2px; }
+  .mat-row{ display:flex; align-items:center; gap:8px; }
+  .mat-row .nm{ flex:1; }
+  .qty-box{ display:flex; align-items:center; gap:0; width:150px; flex-shrink:0; }
+  .qty-box input{ text-align:center; border-radius:0; }
+  .qty-box .step{ width:34px; flex-shrink:0; border:1px solid var(--line); background:var(--surface);
+    font-size:17px; font-weight:700; color:var(--accent-d); padding:9px 0; cursor:pointer; }
+  .qty-box .step.minus{ border-radius:8px 0 0 8px; }
+  .qty-box .step.plus{ border-radius:0 8px 8px 0; }
+  .qty-box .step:hover{ background:#e6e9ec; }
+  .row-x{ width:34px; flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:8px;
+    padding:9px 0; cursor:pointer; color:var(--muted); }
+  .row-x:hover{ background:#fdeceb; color:var(--danger); border-color:#f3c6c2; }
+  .modal .foot{ display:flex; gap:10px; margin-top:18px; }
+  .modal .foot .spacer{ flex:1; }
+</style>
+</head>
+<body>
+
+  <div class="appbar">
+    <h1>Listas da Nany</h1>
+    <span class="sub">Catálogo de cirurgias → PDF A4, 4 por folha, pronta para dobrar e recortar</span>
+  </div>
+
+  <div class="layout">
+    <!-- COLUNA ESQUERDA -->
+    <div>
+      <!-- CATÁLOGO -->
+      <div class="card">
+        <h2>📚 Catálogo de cirurgias <span class="badge" id="catCount">0</span></h2>
+        <div class="search-wrap">
+          <input type="search" id="busca" placeholder="🔎 Pesquisar pelo nome da cirurgia…" autocomplete="off">
+        </div>
+        <div class="cat-list" id="catList"></div>
+        <div class="btns">
+          <button class="btn-primary" onclick="abrirEditor()">➕ Nova cirurgia</button>
+        </div>
+
+        <div class="backup-bar">
+          <div class="backup-status off" id="backupStatus">…</div>
+          <div class="btns" style="margin-top:0">
+            <button class="btn-ghost btn-sm" id="btnAuto" onclick="ativarBackupAuto()">💾 Ativar backup automático</button>
+            <button class="btn-ghost btn-sm" onclick="baixarBackup()">⬇ Baixar backup</button>
+            <button class="btn-ghost btn-sm" onclick="document.getElementById('fileRestore').click()">↩ Restaurar backup</button>
+            <input type="file" id="fileRestore" accept="application/json,.json" style="display:none" onchange="restaurarBackup(this.files[0])">
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTA DO DIA -->
+      <div class="card">
+        <h2>🗓️ Lista do dia <span class="badge" id="diaCount">0</span></h2>
+        <div class="day-list" id="diaList"></div>
+        <div class="btns">
+          <button class="btn-primary" onclick="baixarPDF()">⬇ Baixar PDF</button>
+          <button class="btn-ghost" onclick="usarExemplo()">Usar exemplo</button>
+          <button class="btn-ghost" onclick="limparDia()">Limpar dia</button>
+        </div>
+        <div class="status" id="status"></div>
+
+        <details>
+          <summary>📋 Adicionar colando texto (jeito antigo)</summary>
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole todas as cirurgias do dia de uma vez (uma embaixo da outra). Elas entram só na lista do dia — para guardar no catálogo, use “➕ Nova cirurgia”.</p>
+          <textarea id="txtColar" spellcheck="false" placeholder="Nome da cirurgia&#10;Material - quantidade&#10;…"></textarea>
+          <div class="btns">
+            <button class="btn-ghost btn-sm" onclick="adicionarColado()">Adicionar à lista do dia</button>
+          </div>
+          <div style="margin-top:12px">
+            <b style="font-size:12.5px;color:var(--accent-d)">Regras para escrever:</b>
+            <ul style="margin:8px 0 2px;padding-left:18px;line-height:1.6;font-size:12.5px;color:var(--ink)">
+              <li><b>Nome da cirurgia:</b> numa linha sozinha — ex.: <code>CVL SUS</code>. Não precisa de número.</li>
+              <li><b>Cada material:</b> uma linha terminando em <b>- quantidade</b> — ex.: <code>Luva 6,5- 4</code>.</li>
+              <li><b>Sempre ponha a quantidade (um número) no fim.</b> <span class="no">Errado:</span> <code>Compressas</code> &nbsp; <span class="ok">Certo:</span> <code>Compressas- 1</code></li>
+              <li>Pode ter hífen/número no nome: <code>Vicryl 4-0 incolor- 2</code> (vale o último número).</li>
+              <li><b>Separe</b> cada cirurgia com uma linha em branco.</li>
+            </ul>
+          </div>
+        </details>
+
+        <div class="hint">
+          O PDF sai no tamanho <b>A4</b>, com cada folha dividida em <b>4 partes iguais</b> e linhas tracejadas (✂) no centro — é só <b>dobrar e cortar na régua</b>. Depois abra o PDF e mande imprimir.
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="card preview-card">
+      <h2>👁️ Pré-visualização (igual ao PDF)</h2>
+      <div class="pages" id="pages"><div class="empty">Adicione cirurgias à lista do dia para ver as folhas aqui.</div></div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITOR -->
+  <div class="modal-overlay" id="editor">
+    <div class="modal">
+      <h3 id="edTitulo">Nova cirurgia</h3>
+      <p class="sub2">Dê um nome e liste os materiais com suas quantidades. Fica salvo no catálogo para reutilizar.</p>
+      <label for="edNome">Nome da cirurgia</label>
+      <input type="text" id="edNome" placeholder="Ex.: CVL SUS, Histerectomia…" autocomplete="off">
+
+      <div class="mat-head">
+        <span class="h-nm">Material</span>
+        <span class="h-qt">Quantidade</span>
+        <span class="h-x"></span>
+      </div>
+      <div class="mat-rows" id="edMatRows"></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn-ghost btn-sm" onclick="addMatRow()">➕ Adicionar material</button>
+      </div>
+
+      <details style="margin-top:14px">
+        <summary>📋 Colar lista (rápido)</summary>
+        <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole os materiais no formato <code>Material - quantidade</code> (um por linha) e clique abaixo para preencher as linhas automaticamente.</p>
+        <textarea id="edColar" spellcheck="false" style="min-height:120px" placeholder="Vicryl 4-0 incolor- 2&#10;Luva 6,5- 4&#10;…"></textarea>
+        <div class="btns">
+          <button class="btn-ghost btn-sm" onclick="preencherDoTexto()">Preencher a partir do texto</button>
+        </div>
+      </details>
+
+      <div class="foot">
+        <button class="btn-ghost" onclick="fecharEditor()">Cancelar</button>
+        <span class="spacer"></span>
+        <button class="btn-primary" onclick="salvarEditor()">✔ Salvar no catálogo</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   GERADOR DE PDF PRÓPRIO (sem biblioteca externa, 100% offline)
+   ===================================================================== */
+const HELV=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const HELVB=[278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+
+function textWidth(str,sizePt,bold){
+  const tbl=bold?HELVB:HELV; let w=0;
+  for(let i=0;i<str.length;i++){ let c=str.charCodeAt(i);
+    w += (c>=32&&c<=126)? tbl[c-32] : tbl['o'.charCodeAt(0)-32]; }
+  return w/1000*sizePt*0.352778;
+}
+function wrap(str,maxMm,sizePt,bold){
+  const words=String(str).split(/\s+/).filter(Boolean); const lines=[]; let cur='';
+  for(const wd of words){ const t=cur?cur+' '+wd:wd;
+    if(textWidth(t,sizePt,bold)<=maxMm||!cur){cur=t;} else {lines.push(cur);cur=wd;} }
+  if(cur)lines.push(cur); return lines.length?lines:[''];
+}
+
+const PT=2.834645669, PWmm=210, PHmm=297, PWpt=PWmm*PT, PHpt=PHmm*PT;
+
+function PdfBuilder(){ this.objects=[]; }
+PdfBuilder.prototype.add=function(b){ this.objects.push(b); return this.objects.length; };
+PdfBuilder.prototype.build=function(){
+  let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const off=[];
+  for(let i=0;i<this.objects.length;i++){ off[i]=out.length; out+=(i+1)+' 0 obj\n'+this.objects[i]+'\nendobj\n'; }
+  const xref=out.length;
+  out+='xref\n0 '+(this.objects.length+1)+'\n0000000000 65535 f \n';
+  for(let i=0;i<this.objects.length;i++) out+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+  out+='trailer\n<< /Size '+(this.objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';
+  return out;
+};
+function esc(s){ return String(s).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)'); }
+
+/* renderizador PDF */
+function Canvas(){ this.ops=[]; }
+Canvas.prototype.x=function(x){ return (x*PT).toFixed(2); };
+Canvas.prototype.y=function(y){ return ((PHmm-y)*PT).toFixed(2); };
+Canvas.prototype.rectFill=function(x,y,w,h,g){ this.ops.push(`${g} ${g} ${g} rg ${this.x(x)} ${this.y(y+h)} ${(w*PT).toFixed(2)} ${(h*PT).toFixed(2)} re f`); };
+Canvas.prototype.rectStroke=function(x,y,w,h,g,lw){ this.ops.push(`${g} ${g} ${g} RG ${lw.toFixed(2)} w ${this.x(x)} ${this.y(y+h)} ${(w*PT).toFixed(2)} ${(h*PT).toFixed(2)} re S`); };
+Canvas.prototype.line=function(x1,y1,x2,y2,g,lw,dash){ this.ops.push(`${g} ${g} ${g} RG ${lw.toFixed(2)} w ${dash?('['+dash+'] 0 d '):''}${this.x(x1)} ${this.y(y1)} m ${this.x(x2)} ${this.y(y2)} l S ${dash?'[] 0 d':''}`); };
+Canvas.prototype.text=function(str,x,topY,sizePt,bold,g,align,rightX){
+  const base=topY+sizePt*0.352778*0.80; let xx=x;
+  if(align==='r') xx=rightX-textWidth(str,sizePt,bold);
+  else if(align==='c') xx=x-textWidth(str,sizePt,bold)/2;
+  this.ops.push(`${g} ${g} ${g} rg BT /${bold?'F2':'F1'} ${sizePt.toFixed(2)} Tf ${(xx*PT).toFixed(2)} ${this.y(base)} Td (${esc(str)}) Tj ET`);
+};
+Canvas.prototype.scissors=function(cx,topY,sizePt,g){
+  const base=topY+sizePt*0.352778*0.80, w=0.5*sizePt*0.352778;
+  this.ops.push(`${g} ${g} ${g} rg BT /F3 ${sizePt.toFixed(2)} Tf ${((cx)*PT - w).toFixed(2)} ${this.y(base)} Td (") Tj ET`);
+};
+
+/* desenha uma caixa (cirurgia) preenchendo o espaço */
+function drawCard(cv,s,bx,by,bw,bh){
+  const ip=2.2, cw=bw-2*ip;
+  function layout(k){
+    const nameSz=11*k, headSz=11*k, cntSz=7.3*k, qtySz=9*k;
+    const lh=nameSz*0.352778*1.16, cb=nameSz*0.352778*0.92, gap=nameSz*0.352778*0.45;
+    const headH=headSz*0.352778*1.15+2.0;
+    const ckCol=cb+nameSz*0.352778*0.5;
+    let qMax=0; for(const it of s.items) qMax=Math.max(qMax,textWidth(it.qtyLabel,qtySz,true)+qtySz*0.352778*0.7);
+    const qCol=Math.max(qMax,qtySz*0.352778*1.6);
+    const nameMax=cw-ckCol-qCol-gap;
+    let rows=[], total=0;
+    for(const it of s.items){ const lines=wrap(it.name,nameMax,nameSz,false);
+      const rh=Math.max(lines.length*lh,cb); rows.push({it,lines,rh}); total+=rh+gap; }
+    total=headH+total+gap*0.3;
+    return {k,nameSz,headSz,cntSz,qtySz,lh,cb,gap,headH,ckCol,qCol,rows,total};
+  }
+  let lo=0.45,hi=2.0,best=layout(0.45);
+  for(let i=0;i<26;i++){ const mid=(lo+hi)/2,L=layout(mid); if(L.total<=bh){best=L;lo=mid;}else{hi=mid;} }
+  const L=best;
+  cv.rectStroke(bx,by,bw,bh,0.60,0.5);
+  cv.rectFill(bx,by,bw,L.headH,0.925);
+  cv.line(bx,by+L.headH,bx+bw,by+L.headH,0.69,0.4,null);
+  cv.text(s.title.toUpperCase(),bx+ip,by+1.0,L.headSz,true,0.07,'l');
+  cv.text(s.items.length+' itens',0,by+1.6,L.cntSz,false,0.33,'r',bx+bw-ip);
+  const areaTop=by+L.headH, areaH=bh-L.headH;
+  let usedRows=0; for(const r of L.rows) usedRows+=r.rh;
+  const n=L.rows.length, extra=Math.max(0,areaH-usedRows-L.gap*0.5), slot=n>0?extra/n:0;
+  let y=areaTop+L.gap*0.4;
+  for(const r of L.rows){
+    const rowH=r.rh+slot, midY=y+rowH/2;
+    cv.rectStroke(bx+ip,midY-L.cb/2,L.cb,L.cb,0.40,0.35);
+    const tbH=r.lines.length*L.lh; let ty=midY-tbH/2;
+    for(const ln of r.lines){ cv.text(ln,bx+ip+L.ckCol,ty,L.nameSz,false,0.07,'l'); ty+=L.lh; }
+    const qh=L.qtySz*0.352778*1.25, qw=L.qCol, qx=bx+bw-ip-qw;
+    cv.rectStroke(qx,midY-qh/2,qw,qh,0.54,0.35);
+    cv.text(r.it.qtyLabel,qx+qw/2,midY-L.qtySz*0.352778*0.62,L.qtySz,true,0.07,'c');
+    if(r!==L.rows[L.rows.length-1]) cv.line(bx+ip,y+rowH,bx+bw-ip,y+rowH,0.80,0.2,'0.6 1.2');
+    y+=rowH;
+  }
+}
+function drawPage(cv,subset){
+  const QW=PWmm/2,QH=PHmm/2,pad=6, pos=[[0,0],[QW,0],[0,QH],[QW,QH]];
+  for(let i=0;i<subset.length&&i<4;i++){ const [qx,qy]=pos[i]; drawCard(cv,subset[i],qx+pad,qy+pad,QW-2*pad,QH-2*pad); }
+  cv.line(QW,0,QW,PHmm,0.5,0.45,'2.2 1.8');
+  cv.line(0,QH,PWmm,QH,0.5,0.45,'2.2 1.8');
+  cv.scissors(QW,0.6,9,0.45); cv.scissors(QW,PHmm-4.0,9,0.45);
+  cv.scissors(2.2,QH-3.0,9,0.45); cv.scissors(PWmm-3.2,QH-3.0,9,0.45);
+}
+function buildPDF(paginas){
+  const pdf=new PdfBuilder();
+  pdf.add('<< /Type /Catalog /Pages 2 0 R >>');
+  const pagesIdx=pdf.add('');
+  pdf.add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  pdf.add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  pdf.add('<< /Type /Font /Subtype /Type1 /BaseFont /ZapfDingbats >>');
+  const kids=[];
+  for(const subset of paginas){
+    const cv=new Canvas(); drawPage(cv,subset);
+    const content=cv.ops.join('\n');
+    const streamObj=pdf.add('<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
+    const pageObj=pdf.add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PWpt.toFixed(2)+' '+PHpt.toFixed(2)+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents '+streamObj+' 0 R >>');
+    kids.push(pageObj+' 0 R');
+  }
+  pdf.objects[pagesIdx-1]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+kids.length+' >>';
+  return pdf.build();
+}
+
+/* renderizador SVG (mesma geometria — pré-visualização = PDF) */
+function g2rgb(g){ const v=Math.round(g*255); return `rgb(${v},${v},${v})`; }
+function SvgCanvas(){ this.s=''; }
+SvgCanvas.prototype.rectFill=function(x,y,w,h,g){ this.s+=`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="${g2rgb(g)}"/>`; };
+SvgCanvas.prototype.rectStroke=function(x,y,w,h,g,lw){ this.s+=`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="none" stroke="${g2rgb(g)}" stroke-width="${(lw*0.352778).toFixed(3)}"/>`; };
+SvgCanvas.prototype.line=function(x1,y1,x2,y2,g,lw,dash){ const d=dash?` stroke-dasharray="${dash.split(' ').map(n=>(parseFloat(n)*0.352778).toFixed(3)).join(' ')}"`:''; this.s+=`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${g2rgb(g)}" stroke-width="${(lw*0.352778).toFixed(3)}"${d}/>`; };
+SvgCanvas.prototype.text=function(str,x,topY,sizePt,bold,g,align,rightX){ const fs=sizePt*0.352778, base=topY+fs*0.80; let tx=x,a='start'; if(align==='r'){tx=rightX;a='end';} else if(align==='c'){a='middle';} const t=String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;'); this.s+=`<text x="${tx.toFixed(2)}" y="${base.toFixed(2)}" font-family="Arial,Helvetica,sans-serif" font-size="${fs.toFixed(2)}" font-weight="${bold?'700':'400'}" fill="${g2rgb(g)}" text-anchor="${a}">${t}</text>`; };
+SvgCanvas.prototype.scissors=function(cx,topY,sizePt,g){ const fs=sizePt*0.352778, base=topY+fs*0.80; this.s+=`<text x="${cx.toFixed(2)}" y="${base.toFixed(2)}" font-size="${fs.toFixed(2)}" text-anchor="middle" fill="${g2rgb(g)}">✂</text>`; };
+function buildSVGPages(paginas){
+  return paginas.map(subset=>{ const cv=new SvgCanvas(); drawPage(cv,subset);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="xMidYMid meet">${cv.s}</svg>`; });
+}
+
+/* parser */
+function matchItem(line){
+  const re=/[-–—]/g; let m,idx=-1;
+  while((m=re.exec(line))!==null){ if(/^\s*\d/.test(line.slice(m.index+1))) idx=m.index; }
+  if(idx===-1) return null;
+  const name=line.slice(0,idx).replace(/[\s\-–—]+$/,'').trim();
+  const qtyLabel=line.slice(idx+1).trim();
+  if(!name) return null;
+  return {name,qtyLabel};
+}
+function parseAll(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()); const surgeries=[]; let cur=null;
+  for(const line of lines){ if(!line) continue; const it=matchItem(line);
+    if(it){ if(!cur){cur={title:'Lista',items:[]};surgeries.push(cur);} cur.items.push(it); }
+    else { cur={title:line,items:[]}; surgeries.push(cur); } }
+  return surgeries.filter(s=>s.items.length>0);
+}
+function chunk(a,n){ const o=[]; for(let i=0;i<a.length;i+=n) o.push(a.slice(i,i+n)); return o; }
+
+/* =====================================================================
+   APP — Catálogo + Lista do dia + Persistência/Backup
+   ===================================================================== */
+const MAX_POR_PAGINA=4;
+const LS_CAT='listas-nany-catalogo';
+const LS_BKP='listas-nany-ultimo-backup';
+
+/* Catálogo inicial (genérico) usado na 1ª vez e no botão "Usar exemplo" */
+const SEMENTE=
+`CVL SUS
+
+Prolene 0 ag. pequena-2
+Vicryl 4-0 incolor-2
+Nylon 2-0-2
+Bupi com vaso-1
+Luva 6,5- 4
+Degermante-1
+Luva lta-2
+Seringa 20ml-1
+Ag. Vermelha-1
+Ag. Azul -1
+Clip 300-1
+Clip 400- 1
+
+CVL (convênio)
+
+Prolene 0 ag. pequena -2
+Monocryl 4-0 -2
+Caprofyl 3-0 -2
+Bupi com vaso-1
+Luva 6,5- 4
+Catgut qualquer um -1
+Luva lta-2
+Seringa 20ml-1
+Ag. Vermelha-1
+Ag. Azul -1
+Trocater 12- 1
+Clip 300- 2
+Clip 400- 1
+Advanced pequeno- 4
+
+Hérnia Inguinal (SUS)
+
+Vicryl 2-0- 2
+Vicryl 3-0- 2
+Vicryl 4-0 incolor- 2
+Prolene 2-0 cm 2 agulhas- 2
+Luva 6,5- 3
+
+Histerectomia
+
+Vicryl 0 ag. uro- 6
+Vicryl 2-0 - 4
+Trocater 12 - 1
+Clip 300- 2
+Clip 400- 2
+Xylo gel- 3
+Luva 6,5- 4
+Luva lta- 2
+Vicryl 3-0- 3
+Caprofyl 4-0 - 3
+Caprofyl 3-0 - 2
+Sutupack 2-0 -1
+Dreno de Black 24/pêra - 1
+Transamin- 8
+Soro- 1
+Capa com barreira- 4
+Luva 7,5- 4
+Vicryl 1- 2
+Ropi- 1
+Seringa 20ml- 1
+Ag. 40x12- 1
+Ag. 30x7- 1
+Pds- 0- 2
+Monocryl 4-0- 3
+
+HTA
+
+Vicryl 0 uro- 8
+Vicryl 2-0 ag gastro- 4
+Vicryl 1- 2
+Vicryl 3-0 ag grande - 3
+Caprofyl 4-0 - 3
+Caprofyl 3-0 - 2
+Sutupack 0 e 2- 2 cada
+Dreno de Black 24/pêra - 1
+Prologador de bisturi e lixa- 1 cada
+Capa com barreira- 4
+Luva 6,5- 4
+Luva 7,5- 3
+Transamin- 8
+Soro 1000- 1`;
+
+/* ---- estado ---- */
+let catalogo=[];      // [{id,title,items:[{name,qtyLabel}],updatedAt}]
+let dia=[];           // [{title,items:[{name,qtyLabel}]}] — o que vira PDF
+let editId=null;      // id em edição (null = nova)
+let fsHandle=null;    // FileSystemFileHandle do backup automático
+let fsOn=false;       // backup automático ativo e com permissão
+
+/* ---- utilidades ---- */
+function uid(){ return 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function clone(s){ return {title:s.title, items:s.items.map(it=>({name:it.name,qtyLabel:it.qtyLabel}))}; }
+
+/* ---- IndexedDB mínimo (guarda o handle do arquivo de backup) ---- */
+function idb(op,key,val){
+  return new Promise((res,rej)=>{
+    const o=indexedDB.open('listas-nany-db',1);
+    o.onupgradeneeded=()=>{ o.result.createObjectStore('kv'); };
+    o.onerror=()=>rej(o.error);
+    o.onsuccess=()=>{ const db=o.result;
+      const tx=db.transaction('kv', op==='get'?'readonly':'readwrite');
+      const st=tx.objectStore('kv'); let rq;
+      if(op==='get') rq=st.get(key); else rq=st.put(val,key);
+      rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); };
+  });
+}
+
+/* =====================================================================
+   PERSISTÊNCIA
+   ===================================================================== */
+function carregarCatalogo(){
+  try{ const raw=localStorage.getItem(LS_CAT);
+    if(raw){ const arr=JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+  }catch(e){}
+  return null;
+}
+async function salvarCatalogo(){
+  try{ localStorage.setItem(LS_CAT, JSON.stringify(catalogo)); }catch(e){}
+  if(fsOn && fsHandle){ try{ await escreverArquivo(fsHandle, dadosBackup()); marcarBackup(); }catch(e){ fsOn=false; } }
+  atualizarBackupInfo();
+}
+function dadosBackup(){
+  return JSON.stringify({app:'Listas da Nany', versao:1, salvoEm:new Date().toISOString(), catalogo}, null, 2);
+}
+function marcarBackup(){ try{ localStorage.setItem(LS_BKP, new Date().toISOString()); }catch(e){} }
+
+/* =====================================================================
+   BACKUP AUTOMÁTICO (File System Access API)
+   ===================================================================== */
+const FS_OK = (typeof window!=='undefined' && 'showSaveFilePicker' in window);
+
+async function escreverArquivo(handle, texto){
+  const w=await handle.createWritable(); await w.write(texto); await w.close();
+}
+async function ativarBackupAuto(){
+  if(!FS_OK){ alert('O backup automático em arquivo funciona no Microsoft Edge ou Google Chrome abrindo o app pelo link da internet (não pelo arquivo no computador).\n\nEnquanto isso, use “⬇ Baixar backup” para guardar uma cópia.'); return; }
+  try{
+    const handle=await window.showSaveFilePicker({
+      suggestedName:'cirurgias-da-nany.json',
+      types:[{description:'Backup das cirurgias', accept:{'application/json':['.json']}}]
+    });
+    fsHandle=handle; fsOn=true;
+    await escreverArquivo(handle, dadosBackup()); marcarBackup();
+    try{ await idb('put','backupHandle',handle); }catch(e){}
+    atualizarBackupInfo();
+    alert('✅ Backup automático ativado!\n\nDica: se você escolheu uma pasta do OneDrive ou Google Drive, suas cirurgias ficam guardadas também na nuvem — nunca se perdem, mesmo trocando de computador.');
+  }catch(e){ /* usuário cancelou */ }
+}
+async function tentarReconectarBackup(){
+  if(!FS_OK) return;
+  try{
+    const handle=await idb('get','backupHandle');
+    if(!handle) return;
+    fsHandle=handle;
+    const perm=await handle.queryPermission({mode:'readwrite'});
+    fsOn=(perm==='granted');
+    atualizarBackupInfo();
+  }catch(e){}
+}
+async function reconcederPermissao(){
+  if(!fsHandle) return;
+  try{ const perm=await fsHandle.requestPermission({mode:'readwrite'});
+    if(perm==='granted'){ fsOn=true; await escreverArquivo(fsHandle, dadosBackup()); marcarBackup(); }
+    atualizarBackupInfo();
+  }catch(e){}
+}
+
+function baixarBackup(){
+  const blob=new Blob([dadosBackup()],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const d=new Date(), yy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  const a=document.createElement('a'); a.href=url; a.download=`cirurgias-backup-${yy}-${mm}-${dd}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  marcarBackup(); atualizarBackupInfo();
+}
+async function restaurarBackup(file){
+  if(!file) return;
+  try{
+    const txt=await file.text(); const obj=JSON.parse(txt);
+    const arr = Array.isArray(obj) ? obj : (obj && Array.isArray(obj.catalogo) ? obj.catalogo : null);
+    if(!arr) throw 0;
+    const limpos=arr.filter(s=>s && s.title && Array.isArray(s.items))
+      .map(s=>({ id:s.id||uid(), title:String(s.title), updatedAt:s.updatedAt||Date.now(),
+        items:s.items.filter(it=>it&&it.name).map(it=>({name:String(it.name), qtyLabel:String(it.qtyLabel||'1')})) }));
+    if(!limpos.length) throw 0;
+    if(!confirm(`Restaurar ${limpos.length} cirurgia(s) do backup?\n\nIsto substitui o catálogo atual (${catalogo.length} cirurgia(s)).`)) return;
+    catalogo=limpos; await salvarCatalogo(); renderCatalogo();
+    alert('✅ Backup restaurado com sucesso!');
+  }catch(e){ alert('❌ Não consegui ler esse arquivo de backup. Verifique se é o arquivo .json gerado pelo app.'); }
+  document.getElementById('fileRestore').value='';
+}
+
+function atualizarBackupInfo(){
+  const el=document.getElementById('backupStatus');
+  const btn=document.getElementById('btnAuto');
+  if(fsOn){
+    el.className='backup-status on';
+    el.innerHTML='🛡️ <b>Backup automático ligado.</b> Tudo o que você salva é guardado também no arquivo escolhido.';
+    btn.style.display='none';
+    return;
+  }
+  if(fsHandle && FS_OK){
+    el.className='backup-status off';
+    el.innerHTML='⚠️ Backup automático pausado. <a href="#" onclick="reconcederPermissao();return false;"><b>Clique para reativar</b></a>.';
+    btn.style.display='none';
+    return;
+  }
+  // sem backup automático
+  let quando='';
+  const last=localStorage.getItem(LS_BKP);
+  if(last){ const dias=Math.floor((Date.now()-new Date(last).getTime())/86400000);
+    quando = dias<=0 ? ' Última cópia: hoje.' : (dias===1?' Última cópia: ontem.':` Última cópia: há ${dias} dias.`);
+  } else { quando=' Você ainda não fez nenhuma cópia de segurança.'; }
+  el.className='backup-status off';
+  el.innerHTML='⚠️ <b>Seus dados estão salvos só neste navegador.</b>'+quando+(FS_OK?' Recomendo ativar o backup automático.':' Baixe uma cópia de vez em quando.');
+  btn.style.display = FS_OK ? '' : 'none';
+}
+
+/* =====================================================================
+   CATÁLOGO — render + busca + CRUD
+   ===================================================================== */
+function renderCatalogo(){
+  const wrap=document.getElementById('catList');
+  const q=norm(document.getElementById('busca').value.trim());
+  document.getElementById('catCount').textContent=catalogo.length;
+  const lista=catalogo
+    .filter(s=>!q || norm(s.title).includes(q))
+    .sort((a,b)=>a.title.localeCompare(b.title,'pt'));
+  if(!catalogo.length){
+    wrap.innerHTML='<div class="empty">Seu catálogo está vazio.<br>Clique em <b>➕ Nova cirurgia</b> para começar.</div>'; return;
+  }
+  if(!lista.length){ wrap.innerHTML='<div class="empty">Nenhuma cirurgia encontrada para essa busca.</div>'; return; }
+  wrap.innerHTML=lista.map(s=>`
+    <div class="cat-item">
+      <div class="info">
+        <div class="nm" title="${esc2(s.title)}">${esc2(s.title)}</div>
+        <div class="meta">${s.items.length} ${s.items.length===1?'material':'materiais'}</div>
+      </div>
+      <div class="acts">
+        <button class="icon-btn add" title="Adicionar à lista do dia" onclick="adicionarAoDia('${s.id}')">+ dia</button>
+        <button class="icon-btn" title="Editar" onclick="abrirEditor('${s.id}')">✏️</button>
+        <button class="icon-btn del" title="Excluir" onclick="excluirCirurgia('${s.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function excluirCirurgia(id){
+  const s=catalogo.find(x=>x.id===id); if(!s) return;
+  if(!confirm(`Excluir “${s.title}” do catálogo?\n\nIsto não pode ser desfeito.`)) return;
+  catalogo=catalogo.filter(x=>x.id!==id); salvarCatalogo(); renderCatalogo();
+}
+
+/* =====================================================================
+   EDITOR (modal) — criar / atualizar
+   ===================================================================== */
+function abrirEditor(id){
+  editId = id || null;
+  const s = id ? catalogo.find(x=>x.id===id) : null;
+  document.getElementById('edTitulo').textContent = s ? 'Editar cirurgia' : 'Nova cirurgia';
+  document.getElementById('edNome').value = s ? s.title : '';
+  document.getElementById('edColar').value = '';
+  const rows=document.getElementById('edMatRows'); rows.innerHTML='';
+  if(s && s.items.length){ s.items.forEach(it=>addMatRow(it.name,it.qtyLabel)); }
+  else { addMatRow('','1'); }
+  document.getElementById('editor').classList.add('show');
+  setTimeout(()=>document.getElementById('edNome').focus(),30);
+}
+function fecharEditor(){ document.getElementById('editor').classList.remove('show'); }
+
+function addMatRow(name='', qty='1'){
+  const rows=document.getElementById('edMatRows');
+  const div=document.createElement('div'); div.className='mat-row';
+  div.innerHTML=`
+    <input type="text" class="nm" placeholder="Nome do material" value="${esc2(name)}">
+    <div class="qty-box">
+      <button type="button" class="step minus" onclick="bumpQty(this,-1)" tabindex="-1">−</button>
+      <input type="text" class="qt" value="${esc2(qty)}">
+      <button type="button" class="step plus" onclick="bumpQty(this,1)" tabindex="-1">+</button>
+    </div>
+    <button type="button" class="row-x" title="Remover" onclick="this.closest('.mat-row').remove()">✕</button>`;
+  rows.appendChild(div);
+  return div;
+}
+function bumpQty(btn, delta){
+  const inp=btn.closest('.qty-box').querySelector('.qt');
+  const m=String(inp.value).match(/^(\s*)(\d+)(.*)$/);
+  if(m){ const n=Math.max(0, parseInt(m[2],10)+delta); inp.value=m[1]+n+m[3]; }
+  else if(delta>0){ inp.value='1'; }
+}
+function preencherDoTexto(){
+  const txt=document.getElementById('edColar').value;
+  const parsed=parseAll(txt);
+  const itens=parsed.flatMap(s=>s.items);
+  if(!itens.length){ alert('Não encontrei materiais no texto. Use o formato “Material - quantidade” (um por linha).'); return; }
+  const rows=document.getElementById('edMatRows'); rows.innerHTML='';
+  itens.forEach(it=>addMatRow(it.name,it.qtyLabel));
+  // se o texto trouxe um título e o nome está vazio, aproveita
+  const nomeEl=document.getElementById('edNome');
+  if(!nomeEl.value.trim() && parsed[0] && parsed[0].title && parsed[0].title!=='Lista'){ nomeEl.value=parsed[0].title; }
+  document.getElementById('edColar').value='';
+}
+function salvarEditor(){
+  const title=document.getElementById('edNome').value.trim();
+  if(!title){ alert('Dê um nome para a cirurgia.'); document.getElementById('edNome').focus(); return; }
+  const items=[...document.querySelectorAll('#edMatRows .mat-row')].map(r=>({
+    name:r.querySelector('.nm').value.trim(),
+    qtyLabel:(r.querySelector('.qt').value.trim()||'1')
+  })).filter(it=>it.name);
+  if(!items.length){ alert('Adicione pelo menos um material.'); return; }
+  if(editId){
+    const s=catalogo.find(x=>x.id===editId);
+    if(s){ s.title=title; s.items=items; s.updatedAt=Date.now(); }
+  } else {
+    catalogo.push({id:uid(), title, items, updatedAt:Date.now()});
+  }
+  salvarCatalogo(); renderCatalogo(); fecharEditor();
+  document.getElementById('status').textContent=`“${title}” salva no catálogo.`;
+}
+
+/* =====================================================================
+   LISTA DO DIA — montar e gerar PDF
+   ===================================================================== */
+function renderDia(){
+  const wrap=document.getElementById('diaList');
+  document.getElementById('diaCount').textContent=dia.length;
+  if(!dia.length){
+    wrap.innerHTML='<div class="empty">Nenhuma cirurgia no dia ainda.<br>Use <b>+ dia</b> no catálogo ao lado.</div>';
+  } else {
+    wrap.innerHTML=dia.map((s,i)=>`
+      <div class="day-item">
+        <span class="ord">${i+1}º</span>
+        <span class="nm" title="${esc2(s.title)}">${esc2(s.title)}</span>
+        <span class="meta">${s.items.length} itens</span>
+        <button class="icon-btn" title="Subir" onclick="moverDia(${i},-1)" ${i===0?'disabled style=opacity:.3':''}>▲</button>
+        <button class="icon-btn" title="Descer" onclick="moverDia(${i},1)" ${i===dia.length-1?'disabled style=opacity:.3':''}>▼</button>
+        <button class="icon-btn del" title="Remover do dia" onclick="removerDoDia(${i})">✕</button>
+      </div>`).join('');
+  }
+  renderPreview();
+}
+function renderPreview(){
+  const pagesEl=document.getElementById('pages');
+  if(!dia.length){
+    pagesEl.innerHTML='<div class="empty">Adicione cirurgias à lista do dia para ver as folhas aqui.</div>';
+    document.getElementById('status').textContent=''; return;
+  }
+  const paginas=chunk(dia,MAX_POR_PAGINA);
+  pagesEl.innerHTML=buildSVGPages(paginas).join('');
+  document.getElementById('status').textContent=
+    `${dia.length} cirurgia(s) em ${paginas.length} folha(s) — 4 espaços iguais por folha.`;
+}
+function adicionarAoDia(id){
+  const s=catalogo.find(x=>x.id===id); if(!s) return;
+  dia.push(clone(s)); renderDia();
+  document.getElementById('status').textContent=`“${s.title}” adicionada à lista do dia.`;
+}
+function removerDoDia(i){ dia.splice(i,1); renderDia(); }
+function moverDia(i,d){ const j=i+d; if(j<0||j>=dia.length) return; const t=dia[i]; dia[i]=dia[j]; dia[j]=t; renderDia(); }
+function limparDia(){ if(dia.length && !confirm('Limpar a lista do dia? (O catálogo continua salvo.)')) return; dia=[]; renderDia(); }
+function usarExemplo(){ dia=parseAll(SEMENTE).map(clone); renderDia(); }
+function adicionarColado(){
+  const txt=document.getElementById('txtColar').value;
+  const novas=parseAll(txt).map(clone);
+  if(!novas.length){ alert('Não encontrei cirurgias no texto. Confira as regras logo abaixo da caixa.'); return; }
+  dia.push(...novas); renderDia();
+  document.getElementById('txtColar').value='';
+}
+
+function baixarPDF(){
+  if(!dia.length){ alert('Adicione cirurgias à lista do dia primeiro.'); return; }
+  const str=buildPDF(chunk(dia,MAX_POR_PAGINA));
+  const bytes=new Uint8Array(str.length);
+  for(let i=0;i<str.length;i++) bytes[i]=str.charCodeAt(i)&0xff;
+  const blob=new Blob([bytes],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='Cirurgias do Dia.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+/* =====================================================================
+   INICIALIZAÇÃO
+   ===================================================================== */
+function semear(){
+  catalogo=parseAll(SEMENTE).map(s=>({id:uid(), title:s.title, items:s.items, updatedAt:Date.now()}));
+}
+function init(){
+  const carregado=carregarCatalogo();
+  if(carregado){ catalogo=carregado; }
+  else { semear(); salvarCatalogo(); }
+
+  renderCatalogo(); renderDia(); atualizarBackupInfo();
+
+  document.getElementById('busca').addEventListener('input', renderCatalogo);
+  document.getElementById('editor').addEventListener('click', e=>{ if(e.target.id==='editor') fecharEditor(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') fecharEditor(); });
+
+  tentarReconectarBackup();
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Arquivos temporários / de teste
+_verify.mjs
+_shot.png
+debug.log
+
+# PDFs/backup gerados durante testes
+*.pdf
+cirurgias-backup-*.json
+cirurgias-da-nany.json
+
+# Sistema operacional
+Thumbs.db
+desktop.ini
+.DS_Store
