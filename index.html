@@ -907,32 +907,30 @@ function atualizarContagemMat(){
   if(el) el.textContent=document.querySelectorAll('#edMatRows .mat-row').length;
 }
 
-/* arrastar para reordenar materiais (Pointer Events — mouse e toque) */
+/* arrastar para reordenar materiais (Pointer Events no document — mouse e toque) */
 let dragRow=null;
 function gripPointerDown(e){
-  const grip=e.currentTarget, row=grip.closest('.mat-row'); if(!row) return;
+  const row=(e.target.closest?e.target.closest('.mat-row'):null); if(!row) return;
   e.preventDefault();
   dragRow=row; row.classList.add('dragging');
-  grip.setPointerCapture(e.pointerId);
-  grip.addEventListener('pointermove', gripPointerMove);
-  grip.addEventListener('pointerup', gripPointerUp);
-  grip.addEventListener('pointercancel', gripPointerUp);
+  document.addEventListener('pointermove', gripPointerMove);
+  document.addEventListener('pointerup', gripPointerUp);
+  document.addEventListener('pointercancel', gripPointerUp);
 }
 function gripPointerMove(e){
   if(!dragRow) return;
-  const cont=document.getElementById('edMatRows');
+  if(e.cancelable) e.preventDefault();
+  const cont=document.getElementById('edMatRows'); if(!cont) return;
   const outros=[...cont.querySelectorAll('.mat-row:not(.dragging)')];
   const depois=outros.find(r=>{ const rc=r.getBoundingClientRect(); return e.clientY < rc.top + rc.height/2; });
   if(depois) cont.insertBefore(dragRow, depois); else cont.appendChild(dragRow);
 }
-function gripPointerUp(e){
-  const grip=e.currentTarget;
+function gripPointerUp(){
   if(dragRow) dragRow.classList.remove('dragging');
   dragRow=null;
-  grip.removeEventListener('pointermove', gripPointerMove);
-  grip.removeEventListener('pointerup', gripPointerUp);
-  grip.removeEventListener('pointercancel', gripPointerUp);
-  try{ grip.releasePointerCapture(e.pointerId); }catch(_){}
+  document.removeEventListener('pointermove', gripPointerMove);
+  document.removeEventListener('pointerup', gripPointerUp);
+  document.removeEventListener('pointercancel', gripPointerUp);
 }
 function bumpQty(btn, delta){
   const inp=btn.closest('.qty-box').querySelector('.qt');
