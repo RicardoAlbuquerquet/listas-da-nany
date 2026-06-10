@@ -1,6 +1,5 @@
-# Arquivos temporários / de teste
-_verify.mjs
-_shot.png
+# Arquivos temporários / de teste (rascunhos com prefixo _)
+_*
 debug.log
 
 # PDFs/backup gerados durante testes

@@ -16,7 +16,7 @@
   body{
     font-family:Arial, Helvetica, 'Segoe UI', system-ui, sans-serif;
     background:linear-gradient(160deg,#eef0f2 0%, #e7eaed 100%);
-    color:var(--ink); min-height:100vh;
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
   }
   .appbar{ display:flex; align-items:center; gap:12px; padding:14px 24px;
     background:linear-gradient(120deg,var(--accent),var(--accent-d)); color:#fff;
@@ -24,8 +24,14 @@
   .appbar h1{ font-size:20px; margin:0; font-weight:700; }
   .appbar .sub{ font-size:13px; opacity:.9; margin-left:auto; }
 
-  .layout{ display:grid; grid-template-columns:460px 1fr; gap:20px; padding:20px; align-items:start; }
-  @media (max-width:1040px){ .layout{ grid-template-columns:1fr; } }
+  .layout{ display:grid; grid-template-columns:minmax(0,460px) minmax(0,1fr); gap:20px; padding:20px; align-items:start; }
+  @media (max-width:1040px){ .layout{ grid-template-columns:minmax(0,1fr); } }
+  @media (max-width:600px){
+    .layout{ padding:12px; gap:14px; }
+    .appbar{ padding:12px 16px; }
+    .appbar .sub{ display:none; }
+    .card{ padding:14px; }
+  }
 
   .card{ background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:18px;
     box-shadow:0 4px 14px rgba(0,0,0,.06); margin-bottom:18px; }
@@ -80,7 +86,9 @@
   .cat-item .nm{ font-weight:700; color:var(--accent-d); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cat-item .meta{ font-size:11.5px; color:var(--muted); margin-top:1px; }
   .cat-item .acts{ display:flex; gap:5px; flex-shrink:0; }
-  .icon-btn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 8px; font-size:13px; line-height:1; cursor:pointer; }
+  .icon-btn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 8px; font-size:13px; line-height:1;
+    cursor:pointer; color:var(--accent-d); display:inline-flex; align-items:center; justify-content:center; }
+  .icon-btn svg{ width:15px; height:15px; }
   .icon-btn:hover{ background:var(--surface); }
   .icon-btn.add{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
   .icon-btn.add:hover{ filter:brightness(1.08); }
@@ -91,7 +99,7 @@
   .day-list{ display:flex; flex-direction:column; gap:7px; }
   .day-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); padding:8px 10px; }
   .day-item .ord{ font-weight:700; color:var(--muted); font-size:12px; width:30px; flex-shrink:0; }
-  .day-item .nm{ flex:1; font-weight:600; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .day-item .nm{ flex:1; min-width:0; font-weight:600; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .day-item .meta{ font-size:11.5px; color:var(--muted); flex-shrink:0; }
 
   /* backup */
@@ -162,6 +170,16 @@
 
   .modal-foot{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-top:1px solid var(--line); background:var(--surface2); }
   .modal-foot .spacer{ flex:1; }
+
+  /* toast (aviso com desfazer) */
+  #toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--accent-d); color:#fff; padding:11px 14px 11px 16px; border-radius:11px; display:flex; align-items:center;
+    gap:14px; box-shadow:0 12px 34px rgba(0,0,0,.32); z-index:60; font-size:14px; font-weight:600; max-width:92vw;
+    pointer-events:none; transition:opacity .2s, transform .2s; }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  #toast button{ background:rgba(255,255,255,.16); color:#fff; border:none; padding:7px 13px; border-radius:8px;
+    font-weight:700; font-size:13.5px; cursor:pointer; white-space:nowrap; }
+  #toast button:hover{ background:rgba(255,255,255,.3); }
 </style>
 </head>
 <body>
@@ -178,7 +196,7 @@
       <div class="card">
         <h2>📚 Catálogo de cirurgias <span class="badge" id="catCount">0</span></h2>
         <div class="search-wrap">
-          <input type="search" id="busca" placeholder="🔎 Pesquisar pelo nome da cirurgia…" autocomplete="off">
+          <input type="search" id="busca" placeholder="🔎 Pesquisar por cirurgia ou material…" autocomplete="off">
         </div>
         <div class="cat-list" id="catList"></div>
         <div class="btns">
@@ -202,8 +220,12 @@
         <div class="day-list" id="diaList"></div>
         <div class="btns">
           <button class="btn-primary" onclick="baixarPDF()">⬇ Baixar PDF</button>
-          <button class="btn-ghost" onclick="usarExemplo()">Usar exemplo</button>
-          <button class="btn-ghost" onclick="limparDia()">Limpar dia</button>
+          <button class="btn-ghost" onclick="copiarLista()">📋 Copiar lista</button>
+          <button class="btn-ghost" onclick="enviarWhatsApp()">💬 WhatsApp</button>
+        </div>
+        <div class="btns" style="margin-top:8px">
+          <button class="btn-ghost btn-sm" onclick="usarExemplo()">Usar exemplo</button>
+          <button class="btn-ghost btn-sm" onclick="limparDia()">Limpar dia</button>
         </div>
         <div class="status" id="status"></div>
 
@@ -279,6 +301,8 @@
       </div>
     </div>
   </div>
+
+  <div id="toast"></div>
 
 <script>
 /* =====================================================================
@@ -539,6 +563,21 @@ function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-�
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function clone(s){ return {title:s.title, items:s.items.map(it=>({name:it.name,qtyLabel:it.qtyLabel}))}; }
 
+/* ---- toast (aviso curto, com ação de desfazer) ---- */
+let toastTimer=null;
+function mostrarToast(msg, acaoLabel, acaoFn, ms){
+  const t=document.getElementById('toast'); if(!t) return;
+  t.innerHTML='';
+  const span=document.createElement('span'); span.textContent=msg; t.appendChild(span);
+  if(acaoLabel && acaoFn){
+    const b=document.createElement('button'); b.textContent=acaoLabel;
+    b.onclick=()=>{ esconderToast(); acaoFn(); }; t.appendChild(b);
+  }
+  t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(esconderToast, ms||6000);
+}
+function esconderToast(){ const t=document.getElementById('toast'); if(t) t.classList.remove('show'); }
+
 /* ---- IndexedDB mínimo (guarda o handle do arquivo de backup) ---- */
 function idb(op,key,val){
   return new Promise((res,rej)=>{
@@ -668,35 +707,58 @@ function atualizarBackupInfo(){
 /* =====================================================================
    CATÁLOGO — render + busca + CRUD
    ===================================================================== */
+const SVG_DUP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const SVG_EDIT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+const SVG_TRASH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+
 function renderCatalogo(){
   const wrap=document.getElementById('catList');
   const q=norm(document.getElementById('busca').value.trim());
   document.getElementById('catCount').textContent=catalogo.length;
   const lista=catalogo
-    .filter(s=>!q || norm(s.title).includes(q))
+    .filter(s=>!q || norm(s.title).includes(q) || s.items.some(it=>norm(it.name).includes(q)))
     .sort((a,b)=>a.title.localeCompare(b.title,'pt'));
   if(!catalogo.length){
     wrap.innerHTML='<div class="empty">Seu catálogo está vazio.<br>Clique em <b>➕ Nova cirurgia</b> para começar.</div>'; return;
   }
   if(!lista.length){ wrap.innerHTML='<div class="empty">Nenhuma cirurgia encontrada para essa busca.</div>'; return; }
-  wrap.innerHTML=lista.map(s=>`
+  wrap.innerHTML=lista.map(s=>{
+    let meta=`${s.items.length} ${s.items.length===1?'material':'materiais'}`;
+    if(q && !norm(s.title).includes(q)){
+      const m=s.items.find(it=>norm(it.name).includes(q));
+      if(m) meta+=` · usa “${esc2(m.name)}”`;
+    }
+    return `
     <div class="cat-item">
       <div class="info">
         <div class="nm" title="${esc2(s.title)}">${esc2(s.title)}</div>
-        <div class="meta">${s.items.length} ${s.items.length===1?'material':'materiais'}</div>
+        <div class="meta">${meta}</div>
       </div>
       <div class="acts">
         <button class="icon-btn add" title="Adicionar à lista do dia" onclick="adicionarAoDia('${s.id}')">+ dia</button>
-        <button class="icon-btn" title="Editar" onclick="abrirEditor('${s.id}')">✏️</button>
-        <button class="icon-btn del" title="Excluir" onclick="excluirCirurgia('${s.id}')">🗑️</button>
+        <button class="icon-btn" title="Duplicar" onclick="duplicarCirurgia('${s.id}')">${SVG_DUP}</button>
+        <button class="icon-btn" title="Editar" onclick="abrirEditor('${s.id}')">${SVG_EDIT}</button>
+        <button class="icon-btn del" title="Excluir" onclick="excluirCirurgia('${s.id}')">${SVG_TRASH}</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function excluirCirurgia(id){
+  const idx=catalogo.findIndex(x=>x.id===id); if(idx<0) return;
+  const removida=catalogo[idx];
+  catalogo.splice(idx,1); salvarCatalogo(); renderCatalogo();
+  mostrarToast(`“${removida.title}” excluída.`, 'Desfazer', ()=>{
+    catalogo.splice(Math.min(idx,catalogo.length),0,removida); salvarCatalogo(); renderCatalogo();
+    mostrarToast('Exclusão desfeita.');
+  });
+}
+function duplicarCirurgia(id){
   const s=catalogo.find(x=>x.id===id); if(!s) return;
-  if(!confirm(`Excluir “${s.title}” do catálogo?\n\nIsto não pode ser desfeito.`)) return;
-  catalogo=catalogo.filter(x=>x.id!==id); salvarCatalogo(); renderCatalogo();
+  const copia={ id:uid(), title:s.title+' (cópia)', updatedAt:Date.now(),
+    items:s.items.map(it=>({name:it.name, qtyLabel:it.qtyLabel})) };
+  catalogo.push(copia); salvarCatalogo(); renderCatalogo();
+  abrirEditor(copia.id);
 }
 
 /* =====================================================================
@@ -834,6 +896,38 @@ function baixarPDF(){
   const a=document.createElement('a'); a.href=url; a.download='Cirurgias do Dia.pdf';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+/* ---- compartilhar a lista do dia em texto ---- */
+function listaTexto(){
+  const linhas=['*Cirurgias do dia*',''];
+  dia.forEach(s=>{
+    linhas.push('*'+s.title+'*');
+    s.items.forEach(it=>linhas.push('• '+it.name+' — '+it.qtyLabel));
+    linhas.push('');
+  });
+  return linhas.join('\n').trim();
+}
+function copiarLista(){
+  if(!dia.length){ alert('Adicione cirurgias à lista do dia primeiro.'); return; }
+  const txt=listaTexto();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt)
+      .then(()=>mostrarToast('Lista copiada! Cole no WhatsApp, e-mail ou onde quiser.'))
+      .catch(()=>copiarFallback(txt));
+  } else copiarFallback(txt);
+}
+function copiarFallback(txt){
+  const ta=document.createElement('textarea'); ta.value=txt;
+  ta.style.position='fixed'; ta.style.top='0'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); mostrarToast('Lista copiada!'); }
+  catch(e){ alert('Copie a lista manualmente:\n\n'+txt); }
+  ta.remove();
+}
+function enviarWhatsApp(){
+  if(!dia.length){ alert('Adicione cirurgias à lista do dia primeiro.'); return; }
+  window.open('https://wa.me/?text='+encodeURIComponent(listaTexto()), '_blank');
 }
 
 /* =====================================================================
