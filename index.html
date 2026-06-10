@@ -187,6 +187,16 @@
   #toast button{ background:rgba(255,255,255,.16); color:#fff; border:none; padding:7px 13px; border-radius:8px;
     font-weight:700; font-size:13.5px; cursor:pointer; white-space:nowrap; }
   #toast button:hover{ background:rgba(255,255,255,.3); }
+
+  /* janela de confirmação (substitui o confirm nativo) */
+  .modal-sm{ max-width:430px; }
+  .confirm-body{ padding:20px 22px 6px; display:flex; gap:14px; align-items:flex-start; }
+  .confirm-ic{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:19px; background:var(--surface); }
+  .confirm-ic.warn{ background:var(--warnbg); }
+  .confirm-ic.danger{ background:#fdeceb; }
+  .confirm-tx h3{ margin:0 0 6px; font-size:16px; color:var(--accent-d); }
+  .confirm-tx p{ margin:0 0 4px; font-size:14px; color:var(--ink); line-height:1.5; }
 </style>
 </head>
 <body>
@@ -588,6 +598,39 @@ function mostrarToast(msg, acaoLabel, acaoFn, ms){
 }
 function esconderToast(){ const t=document.getElementById('toast'); if(t) t.classList.remove('show'); }
 
+/* ---- janela de confirmação no estilo do app (substitui o confirm nativo) ---- */
+function confirmar(msg, opts){
+  opts=opts||{};
+  return new Promise(resolve=>{
+    const tipo=opts.danger?'danger':'warn';
+    const icone=opts.danger?'🗑️':'❓';
+    const ov=document.createElement('div'); ov.className='modal-overlay show';
+    ov.innerHTML=`
+      <div class="modal modal-sm">
+        <div class="confirm-body">
+          <div class="confirm-ic ${tipo}">${icone}</div>
+          <div class="confirm-tx">
+            ${opts.titulo?`<h3>${esc2(opts.titulo)}</h3>`:''}
+            <p>${esc2(msg).replace(/\n/g,'<br>')}</p>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-ghost" data-r="0">${esc2(opts.cancelLabel||'Cancelar')}</button>
+          <span class="spacer"></span>
+          <button class="${opts.danger?'btn-danger':'btn-primary'}" data-r="1">${esc2(opts.okLabel||'Sim')}</button>
+        </div>
+      </div>`;
+    function fechar(v){ ov.remove(); document.removeEventListener('keydown',onKey); resolve(v); }
+    function onKey(e){ if(e.key==='Escape') fechar(false); else if(e.key==='Enter') fechar(true); }
+    ov.addEventListener('click',e=>{ if(e.target===ov) fechar(false); });
+    ov.querySelector('[data-r="0"]').onclick=()=>fechar(false);
+    ov.querySelector('[data-r="1"]').onclick=()=>fechar(true);
+    document.addEventListener('keydown',onKey);
+    document.body.appendChild(ov);
+    setTimeout(()=>{ const b=ov.querySelector('[data-r="1"]'); if(b) b.focus(); },30);
+  });
+}
+
 /* ---- IndexedDB mínimo (guarda o handle do arquivo de backup) ---- */
 function idb(op,key,val){
   return new Promise((res,rej)=>{
@@ -681,7 +724,8 @@ async function restaurarBackup(file){
       .map(s=>({ id:s.id||uid(), title:String(s.title), updatedAt:s.updatedAt||Date.now(), usos:s.usos||0,
         items:s.items.filter(it=>it&&it.name).map(it=>({name:String(it.name), qtyLabel:String(it.qtyLabel||'1')})) }));
     if(!limpos.length) throw 0;
-    if(!confirm(`Restaurar ${limpos.length} cirurgia(s) do backup?\n\nIsto substitui o catálogo atual (${catalogo.length} cirurgia(s)).`)) return;
+    if(!(await confirmar(`Restaurar ${limpos.length} cirurgia(s) do backup? Isto substitui o catálogo atual (${catalogo.length} cirurgia(s)).`,
+        {titulo:'Restaurar backup', okLabel:'Restaurar', cancelLabel:'Cancelar'}))) return;
     catalogo=limpos; await salvarCatalogo(); renderCatalogo();
     alert('✅ Backup restaurado com sucesso!');
   }catch(e){ alert('❌ Não consegui ler esse arquivo de backup. Verifique se é o arquivo .json gerado pelo app.'); }
@@ -909,10 +953,11 @@ function renderPreview(){
   document.getElementById('status').textContent=
     `${dia.length} cirurgia(s) · ${totalItens} ${totalItens===1?'item':'itens'} · ${paginas.length} folha(s).`;
 }
-function adicionarAoDia(id){
+async function adicionarAoDia(id){
   const s=catalogo.find(x=>x.id===id); if(!s) return;
   const jaNoDia=dia.some(d=>norm(d.title)===norm(s.title));
-  if(jaNoDia && !confirm(`“${s.title}” já está na lista do dia.\n\nQuer adicionar mesmo assim? (vai ficar duplicada)`)) return;
+  if(jaNoDia && !(await confirmar(`“${s.title}” já está na lista do dia. Quer adicionar mesmo assim? Vai ficar duplicada.`,
+      {titulo:'Cirurgia repetida', okLabel:'Adicionar assim', cancelLabel:'Cancelar'}))) return;
   dia.push(clone(s));
   s.usos=(s.usos||0)+1; salvarCatalogo();
   renderDia();
@@ -920,7 +965,11 @@ function adicionarAoDia(id){
 }
 function removerDoDia(i){ dia.splice(i,1); renderDia(); }
 function moverDia(i,d){ const j=i+d; if(j<0||j>=dia.length) return; const t=dia[i]; dia[i]=dia[j]; dia[j]=t; renderDia(); }
-function limparDia(){ if(dia.length && !confirm('Limpar a lista do dia? (O catálogo continua salvo.)')) return; dia=[]; renderDia(); }
+async function limparDia(){
+  if(dia.length && !(await confirmar('Tem certeza que quer limpar a lista do dia? O catálogo continua salvo.',
+      {titulo:'Limpar lista do dia', okLabel:'Limpar', danger:true}))) return;
+  dia=[]; renderDia();
+}
 function usarExemplo(){ dia=parseAll(SEMENTE).map(clone); renderDia(); }
 function adicionarColado(){
   const txt=document.getElementById('txtColar').value;
