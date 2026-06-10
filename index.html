@@ -781,7 +781,7 @@ function renderCatalogo(){
     if(q && !norm(s.title).includes(q)){
       const m=s.items.find(it=>norm(it.name).includes(q));
       if(m) meta+=` · usa “${esc2(m.name)}”`;
-    } else if(!q && s.usos){ meta+=` · usada ${s.usos}×`; }
+    }
     return `
     <div class="cat-item">
       <div class="info">
