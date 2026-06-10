@@ -14,15 +14,21 @@
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{
-    font-family:Arial, Helvetica, 'Segoe UI', system-ui, sans-serif;
+    font-family:'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
     background:linear-gradient(160deg,#eef0f2 0%, #e7eaed 100%);
     color:var(--ink); min-height:100vh; overflow-x:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
-  .appbar{ display:flex; align-items:center; gap:12px; padding:14px 24px;
+  .appbar{ display:flex; align-items:center; gap:13px; padding:13px 24px;
     background:linear-gradient(120deg,var(--accent),var(--accent-d)); color:#fff;
-    box-shadow:0 3px 12px rgba(0,0,0,.18); }
-  .appbar h1{ font-size:20px; margin:0; font-weight:700; }
-  .appbar .sub{ font-size:13px; opacity:.9; margin-left:auto; }
+    box-shadow:0 3px 14px rgba(0,0,0,.20); position:relative; z-index:2; }
+  .brand-mark{ width:36px; height:36px; border-radius:10px; flex-shrink:0;
+    background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; }
+  .brand-mark svg{ width:21px; height:21px; }
+  .appbar h1{ font-size:20px; margin:0; font-weight:700; letter-spacing:.2px; }
+  .appbar .sub{ font-size:12.5px; opacity:.85; margin-left:auto; font-weight:500; }
+  svg{ display:block; flex-shrink:0; }
+  .modal-x svg{ width:16px; height:16px; }
 
   .layout{ display:grid; grid-template-columns:minmax(0,460px) minmax(0,1fr); gap:20px; padding:20px; align-items:start; }
   @media (max-width:1040px){ .layout{ grid-template-columns:minmax(0,1fr); } }
@@ -33,12 +39,17 @@
     .card{ padding:14px; }
   }
 
-  .card{ background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:18px;
-    box-shadow:0 4px 14px rgba(0,0,0,.06); margin-bottom:18px; }
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:18px;
+    box-shadow:0 1px 2px rgba(20,28,36,.04), 0 6px 20px rgba(20,28,36,.06); margin-bottom:18px; }
   .card:last-child{ margin-bottom:0; }
-  .card h2{ margin:0 0 12px; font-size:15px; color:var(--accent-d); font-weight:700;
-    display:flex; align-items:center; gap:8px; }
+  .card h2{ margin:0 0 13px; font-size:15px; color:var(--accent-d); font-weight:700;
+    display:flex; align-items:center; gap:9px; }
+  .card h2 .hic{ display:inline-flex; color:var(--accent); }
+  .card h2 .hic svg{ width:19px; height:19px; }
   .card h2 .badge{ margin-left:auto; }
+  /* ícones em botões e rótulos */
+  .bic{ display:inline-flex; align-items:center; vertical-align:middle; }
+  .bic svg{ width:16px; height:16px; }
   label{ display:block; font-size:13px; font-weight:600; color:var(--muted); margin:0 0 6px; }
 
   input[type=text], input[type=search]{ width:100%; border:1px solid var(--line); border-radius:8px;
@@ -51,16 +62,19 @@
   textarea:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); background:#fff; }
 
   .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-  button{ border:none; border-radius:8px; padding:11px 18px; font-size:14px; font-weight:600;
-    cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; gap:7px; }
+  button{ border:none; border-radius:9px; padding:11px 18px; font-size:14px; font-weight:600;
+    cursor:pointer; font-family:inherit; display:inline-flex; align-items:center; gap:7px;
+    transition:background .14s, filter .14s, box-shadow .14s, transform .06s, border-color .14s; }
   button:active{ transform:translateY(1px); }
-  .btn-primary{ background:var(--accent); color:#fff; }
-  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-primary{ background:var(--accent); color:#fff; box-shadow:0 2px 6px rgba(44,58,70,.22); }
+  .btn-primary:hover{ filter:brightness(1.1); box-shadow:0 4px 12px rgba(44,58,70,.28); }
   .btn-ghost{ background:var(--surface); color:var(--accent-d); border:1px solid var(--line); }
-  .btn-ghost:hover{ background:#eceef0; }
+  .btn-ghost:hover{ background:#eceef0; border-color:#c8cdd2; }
   .btn-sm{ padding:7px 11px; font-size:13px; }
   .btn-danger{ background:#fdeceb; color:var(--danger); border:1px solid #f3c6c2; }
   .btn-danger:hover{ background:#fbe0dd; }
+  .btn-wa{ background:#25a766; color:#fff; box-shadow:0 2px 6px rgba(37,167,102,.25); }
+  .btn-wa:hover{ filter:brightness(1.06); box-shadow:0 4px 12px rgba(37,167,102,.32); }
 
   .badge{ font-size:12px; font-weight:700; color:var(--accent-d); background:var(--surface);
     border:1px solid var(--line); border-radius:999px; padding:3px 10px; }
@@ -79,25 +93,34 @@
 
   /* catálogo */
   .search-wrap{ position:relative; margin-bottom:12px; }
+  .search-wrap .search-ic{ position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    color:var(--muted); pointer-events:none; display:flex; }
+  .search-wrap .search-ic svg{ width:16px; height:16px; }
+  .search-wrap input[type=search]{ padding-left:36px; }
   .cat-list{ display:flex; flex-direction:column; gap:8px; max-height:360px; overflow:auto; padding-right:2px; }
-  .cat-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px;
-    background:var(--surface2); padding:9px 10px; }
+  .cat-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px;
+    background:var(--surface2); padding:9px 10px; transition:border-color .14s, box-shadow .14s, background .14s; }
+  .cat-item:hover{ border-color:#c2c8ce; background:#fff; box-shadow:0 2px 8px rgba(20,28,36,.07); }
   .cat-item .info{ flex:1; min-width:0; }
   .cat-item .nm{ font-weight:700; color:var(--accent-d); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cat-item .meta{ font-size:11.5px; color:var(--muted); margin-top:1px; }
   .cat-item .acts{ display:flex; gap:5px; flex-shrink:0; }
-  .icon-btn{ border:1px solid var(--line); background:#fff; border-radius:7px; padding:6px 8px; font-size:13px; line-height:1;
-    cursor:pointer; color:var(--accent-d); display:inline-flex; align-items:center; justify-content:center; }
+  .icon-btn{ border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 8px; font-size:13px; line-height:1;
+    cursor:pointer; color:var(--accent-d); display:inline-flex; align-items:center; justify-content:center;
+    transition:background .12s, color .12s, border-color .12s; }
   .icon-btn svg{ width:15px; height:15px; flex-shrink:0; }
-  .icon-btn:hover{ background:var(--surface); }
-  .icon-btn.add{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
-  .icon-btn.add:hover{ filter:brightness(1.08); }
+  .icon-btn:hover{ background:var(--surface); border-color:#c2c8ce; }
+  .icon-btn.add{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; padding:6px 11px; }
+  .icon-btn.add:hover{ filter:brightness(1.1); }
   .icon-btn.del:hover{ background:#fdeceb; color:var(--danger); border-color:#f3c6c2; }
+  .icon-btn:disabled{ opacity:.32; cursor:default; }
   .empty{ color:var(--muted); text-align:center; padding:24px 10px; font-size:13px; }
 
   /* lista do dia */
   .day-list{ display:flex; flex-direction:column; gap:7px; }
-  .day-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); padding:8px 10px; }
+  .day-item{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:9px; background:var(--surface2); padding:8px 10px;
+    transition:border-color .14s, box-shadow .14s, background .14s; }
+  .day-item:hover{ border-color:#c2c8ce; background:#fff; box-shadow:0 2px 8px rgba(20,28,36,.07); }
   .day-item .ord{ font-weight:700; color:var(--muted); font-size:12px; width:30px; flex-shrink:0; }
   .day-item .nm{ flex:1; min-width:0; font-weight:600; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .day-item .meta{ font-size:11.5px; color:var(--muted); flex-shrink:0; }
@@ -191,10 +214,11 @@
   /* janela de confirmação (substitui o confirm nativo) */
   .modal-sm{ max-width:430px; }
   .confirm-body{ padding:20px 22px 6px; display:flex; gap:14px; align-items:flex-start; }
-  .confirm-ic{ width:38px; height:38px; flex-shrink:0; border-radius:50%; display:flex; align-items:center;
-    justify-content:center; font-size:19px; background:var(--surface); }
-  .confirm-ic.warn{ background:var(--warnbg); }
-  .confirm-ic.danger{ background:#fdeceb; }
+  .confirm-ic{ width:40px; height:40px; flex-shrink:0; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; background:var(--surface); }
+  .confirm-ic svg{ width:21px; height:21px; }
+  .confirm-ic.warn{ background:var(--warnbg); color:var(--warn); }
+  .confirm-ic.danger{ background:#fdeceb; color:var(--danger); }
   .confirm-tx h3{ margin:0 0 6px; font-size:16px; color:var(--accent-d); }
   .confirm-tx p{ margin:0 0 4px; font-size:14px; color:var(--ink); line-height:1.5; }
 </style>
@@ -202,8 +226,9 @@
 <body>
 
   <div class="appbar">
+    <span class="brand-mark" data-ic="scissors"></span>
     <h1>Listas da Nany</h1>
-    <span class="sub">Catálogo de cirurgias → PDF A4, 4 por folha, pronta para dobrar e recortar</span>
+    <span class="sub">Cirurgias do dia em A4 — 4 por folha, dobrar e recortar</span>
   </div>
 
   <div class="layout">
@@ -211,21 +236,22 @@
     <div>
       <!-- CATÁLOGO -->
       <div class="card">
-        <h2>📚 Catálogo de cirurgias <span class="badge" id="catCount">0</span></h2>
+        <h2><span class="hic" data-ic="book"></span>Catálogo de cirurgias <span class="badge" id="catCount">0</span></h2>
         <div class="search-wrap">
-          <input type="search" id="busca" placeholder="🔎 Pesquisar por cirurgia ou material…" autocomplete="off">
+          <span class="search-ic" data-ic="search"></span>
+          <input type="search" id="busca" placeholder="Pesquisar por cirurgia ou material…" autocomplete="off">
         </div>
         <div class="cat-list" id="catList"></div>
         <div class="btns">
-          <button class="btn-primary" onclick="abrirEditor()">➕ Nova cirurgia</button>
+          <button class="btn-primary" onclick="abrirEditor()"><span class="bic" data-ic="plus"></span>Nova cirurgia</button>
         </div>
 
         <div class="backup-bar">
           <div class="backup-status off" id="backupStatus">…</div>
           <div class="btns" style="margin-top:0">
-            <button class="btn-ghost btn-sm" id="btnAuto" onclick="ativarBackupAuto()">💾 Ativar backup automático</button>
-            <button class="btn-ghost btn-sm" onclick="baixarBackup()">⬇ Baixar backup</button>
-            <button class="btn-ghost btn-sm" onclick="document.getElementById('fileRestore').click()">↩ Restaurar backup</button>
+            <button class="btn-ghost btn-sm" id="btnAuto" onclick="ativarBackupAuto()"><span class="bic" data-ic="shield"></span>Ativar backup automático</button>
+            <button class="btn-ghost btn-sm" onclick="baixarBackup()"><span class="bic" data-ic="download"></span>Baixar backup</button>
+            <button class="btn-ghost btn-sm" onclick="document.getElementById('fileRestore').click()"><span class="bic" data-ic="upload"></span>Restaurar backup</button>
             <input type="file" id="fileRestore" accept="application/json,.json" style="display:none" onchange="restaurarBackup(this.files[0])">
           </div>
         </div>
@@ -233,12 +259,12 @@
 
       <!-- LISTA DO DIA -->
       <div class="card">
-        <h2>🗓️ Lista do dia <span class="badge" id="diaCount">0</span></h2>
+        <h2><span class="hic" data-ic="calendar"></span>Lista do dia <span class="badge" id="diaCount">0</span></h2>
         <div class="day-list" id="diaList"></div>
         <div class="btns">
-          <button class="btn-primary" onclick="baixarPDF()">⬇ Baixar PDF</button>
-          <button class="btn-ghost" onclick="copiarLista()">📋 Copiar lista</button>
-          <button class="btn-ghost" onclick="enviarWhatsApp()">💬 WhatsApp</button>
+          <button class="btn-primary" onclick="baixarPDF()"><span class="bic" data-ic="download"></span>Baixar PDF</button>
+          <button class="btn-ghost" onclick="copiarLista()"><span class="bic" data-ic="copy"></span>Copiar lista</button>
+          <button class="btn-wa" onclick="enviarWhatsApp()"><span class="bic" data-ic="whatsapp"></span>WhatsApp</button>
         </div>
         <div class="btns" style="margin-top:8px">
           <button class="btn-ghost btn-sm" onclick="usarExemplo()">Usar exemplo</button>
@@ -247,7 +273,7 @@
         <div class="status" id="status"></div>
 
         <details>
-          <summary>📋 Adicionar colando texto (jeito antigo)</summary>
+          <summary><span class="bic" data-ic="clipboard"></span> Adicionar colando texto (jeito antigo)</summary>
           <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole todas as cirurgias do dia de uma vez (uma embaixo da outra). Elas entram só na lista do dia — para guardar no catálogo, use “➕ Nova cirurgia”.</p>
           <textarea id="txtColar" spellcheck="false" placeholder="Nome da cirurgia&#10;Material - quantidade&#10;…"></textarea>
           <div class="btns">
@@ -273,7 +299,7 @@
 
     <!-- COLUNA DIREITA -->
     <div class="card preview-card">
-      <h2>👁️ Pré-visualização (igual ao PDF)</h2>
+      <h2><span class="hic" data-ic="eye"></span>Pré-visualização (igual ao PDF)</h2>
       <div class="pages" id="pages"><div class="empty">Adicione cirurgias à lista do dia para ver as folhas aqui.</div></div>
     </div>
   </div>
@@ -286,7 +312,7 @@
           <h3 id="edTitulo">Nova cirurgia</h3>
           <p class="sub2">Dê um nome e liste os materiais com suas quantidades. Fica salvo no catálogo para reutilizar.</p>
         </div>
-        <button class="modal-x" title="Fechar" onclick="fecharEditor()">✕</button>
+        <button class="modal-x" title="Fechar" data-ic="x" onclick="fecharEditor()"></button>
       </div>
 
       <div class="modal-body">
@@ -299,10 +325,10 @@
           <span class="h-x"></span>
         </div>
         <div class="mat-rows" id="edMatRows"></div>
-        <button class="btn-ghost btn-sm add-mat" onclick="addMatRow('','1',true)">➕ Adicionar material</button>
+        <button class="btn-ghost btn-sm add-mat" onclick="addMatRow('','1',true)"><span class="bic" data-ic="plus"></span>Adicionar material</button>
 
         <details style="margin-top:16px">
-          <summary>📋 Colar lista (rápido)</summary>
+          <summary><span class="bic" data-ic="clipboard"></span> Colar lista (rápido)</summary>
           <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole os materiais no formato <code>Material - quantidade</code> (um por linha) e clique abaixo para preencher as linhas automaticamente.</p>
           <textarea id="edColar" spellcheck="false" style="min-height:120px" placeholder="Vicryl 4-0 incolor- 2&#10;Luva 6,5- 4&#10;…"></textarea>
           <div class="btns">
@@ -314,7 +340,7 @@
       <div class="modal-foot">
         <button class="btn-ghost" onclick="fecharEditor()">Cancelar</button>
         <span class="spacer"></span>
-        <button class="btn-primary" onclick="salvarEditor()">✔ Salvar no catálogo</button>
+        <button class="btn-primary" onclick="salvarEditor()"><span class="bic" data-ic="check"></span>Salvar no catálogo</button>
       </div>
     </div>
   </div>
@@ -583,6 +609,30 @@ function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[̀-�
 function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function clone(s){ return {title:s.title, items:s.items.map(it=>({name:it.name,qtyLabel:it.qtyLabel}))}; }
 
+/* ---- ícones (SVG monocromático, stroke = cor do texto) ---- */
+function svgIc(p){ return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`; }
+const IC={
+  scissors:svgIc('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88"/><path d="M14.47 14.48L20 20"/><path d="M8.12 8.12L12 12"/>'),
+  book:svgIc('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'),
+  calendar:svgIc('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+  eye:svgIc('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'),
+  plus:svgIc('<path d="M12 5v14M5 12h14"/>'),
+  shield:svgIc('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>'),
+  download:svgIc('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>'),
+  upload:svgIc('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>'),
+  copy:svgIc('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+  clipboard:svgIc('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'),
+  whatsapp:svgIc('<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>'),
+  search:svgIc('<circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>'),
+  up:svgIc('<path d="M18 15l-6-6-6 6"/>'),
+  down:svgIc('<path d="M6 9l6 6 6-6"/>'),
+  x:svgIc('<path d="M18 6L6 18M6 6l12 12"/>'),
+  check:svgIc('<path d="M20 6L9 17l-5-5"/>'),
+  help:svgIc('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>'),
+  trash:svgIc('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')
+};
+function injetarIcones(){ document.querySelectorAll('[data-ic]').forEach(el=>{ const n=el.getAttribute('data-ic'); if(IC[n]) el.innerHTML=IC[n]; }); }
+
 /* ---- toast (aviso curto, com ação de desfazer) ---- */
 let toastTimer=null;
 function mostrarToast(msg, acaoLabel, acaoFn, ms){
@@ -603,7 +653,7 @@ function confirmar(msg, opts){
   opts=opts||{};
   return new Promise(resolve=>{
     const tipo=opts.danger?'danger':'warn';
-    const icone=opts.danger?'🗑️':'❓';
+    const icone=opts.danger?IC.trash:IC.help;
     const ov=document.createElement('div'); ov.className='modal-overlay show';
     ov.innerHTML=`
       <div class="modal modal-sm">
@@ -934,9 +984,9 @@ function renderDia(){
         <span class="ord">${i+1}º</span>
         <span class="nm" title="${esc2(s.title)}">${esc2(s.title)}</span>
         <span class="meta">${s.items.length} itens</span>
-        <button class="icon-btn" title="Subir" onclick="moverDia(${i},-1)" ${i===0?'disabled style=opacity:.3':''}>▲</button>
-        <button class="icon-btn" title="Descer" onclick="moverDia(${i},1)" ${i===dia.length-1?'disabled style=opacity:.3':''}>▼</button>
-        <button class="icon-btn del" title="Remover do dia" onclick="removerDoDia(${i})">✕</button>
+        <button class="icon-btn" title="Subir" onclick="moverDia(${i},-1)" ${i===0?'disabled':''}>${IC.up}</button>
+        <button class="icon-btn" title="Descer" onclick="moverDia(${i},1)" ${i===dia.length-1?'disabled':''}>${IC.down}</button>
+        <button class="icon-btn del" title="Remover do dia" onclick="removerDoDia(${i})">${IC.x}</button>
       </div>`).join('');
   }
   renderPreview();
@@ -1031,6 +1081,7 @@ function semear(){
   catalogo=parseAll(SEMENTE).map(s=>({id:uid(), title:s.title, items:s.items, updatedAt:Date.now()}));
 }
 function init(){
+  injetarIcones();
   const carregado=carregarCatalogo();
   if(carregado){ catalogo=carregado; }
   else { semear(); salvarCatalogo(); }
