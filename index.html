@@ -132,7 +132,7 @@
   .mat-head .h-nm{ flex:1; display:flex; align-items:center; gap:7px; }
   .mat-head .count{ background:var(--surface); border:1px solid var(--line); color:var(--accent-d);
     border-radius:999px; padding:1px 8px; font-size:11px; letter-spacing:0; }
-  .mat-head .h-qt{ width:124px; text-align:center; } .mat-head .h-x{ width:34px; }
+  .mat-head .h-qt{ width:134px; text-align:center; } .mat-head .h-x{ width:36px; }
 
   .mat-rows{ display:flex; flex-direction:column; gap:8px; counter-reset:matc; }
   .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; }
@@ -140,19 +140,22 @@
   .mat-row::before{ counter-increment:matc; content:counter(matc); width:20px; flex-shrink:0; text-align:center;
     font-size:11.5px; font-weight:700; color:var(--muted); }
   .mat-row .nm{ flex:1; min-width:0; }
-  .qty-box{ display:flex; align-items:stretch; width:124px; flex-shrink:0; border:1px solid var(--line);
-    border-radius:9px; overflow:hidden; background:#fff; }
+  .qty-box{ display:flex; align-items:stretch; width:134px; height:40px; flex-shrink:0; border:1px solid var(--line);
+    border-radius:10px; overflow:hidden; background:#fff; transition:border-color .12s, box-shadow .12s; }
   .qty-box:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); }
-  .qty-box input{ border:none; border-radius:0; background:transparent; text-align:center; padding:9px 2px; width:100%; min-width:0; }
+  .qty-box input{ border:none; border-radius:0; background:transparent; text-align:center; padding:0 2px; width:100%;
+    min-width:0; font-size:15px; font-weight:700; color:var(--accent-d); }
   .qty-box input:focus{ box-shadow:none; background:transparent; }
-  .qty-box .step{ width:36px; flex-shrink:0; border:none; background:var(--surface); font-size:18px; font-weight:700;
-    color:var(--accent-d); cursor:pointer; }
+  .qty-box .step{ width:36px; flex-shrink:0; border:none; background:var(--surface2); font-size:18px; font-weight:700;
+    color:var(--accent); cursor:pointer; display:flex; align-items:center; justify-content:center; user-select:none;
+    transition:background .12s, color .12s; }
   .qty-box .step.minus{ border-right:1px solid var(--line); }
   .qty-box .step.plus{ border-left:1px solid var(--line); }
-  .qty-box .step:hover{ background:#e2e6ea; }
-  .qty-box .step:active{ background:#d6dbe0; }
-  .row-x{ width:34px; height:38px; flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:9px;
-    cursor:pointer; color:var(--muted); font-size:13px; }
+  .qty-box .step:hover{ background:var(--accent); color:#fff; }
+  .qty-box .step:active{ background:var(--accent-d); }
+  .row-x{ width:36px; height:40px; flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:10px;
+    cursor:pointer; color:var(--muted); display:flex; align-items:center; justify-content:center; transition:background .12s, color .12s, border-color .12s; }
+  .row-x svg{ width:15px; height:15px; }
   .row-x:hover{ background:#fdeceb; color:var(--danger); border-color:#f3c6c2; }
 
   .add-mat{ width:100%; justify-content:center; margin-top:10px; border-style:dashed; }
@@ -723,7 +726,7 @@ function addMatRow(name='', qty='1', focus=false){
       <input type="text" class="qt" value="${esc2(qty)}">
       <button type="button" class="step plus" onclick="bumpQty(this,1)" tabindex="-1">+</button>
     </div>
-    <button type="button" class="row-x" title="Remover" onclick="removerMat(this)">✕</button>`;
+    <button type="button" class="row-x" title="Remover material" onclick="removerMat(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button>`;
   rows.appendChild(div);
   // Enter no nome cria a próxima linha (entrada rápida)
   div.querySelector('.nm').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addMatRow('','1',true); } });
@@ -739,7 +742,7 @@ function atualizarContagemMat(){
 function bumpQty(btn, delta){
   const inp=btn.closest('.qty-box').querySelector('.qt');
   const m=String(inp.value).match(/^(\s*)(\d+)(.*)$/);
-  if(m){ const n=Math.max(0, parseInt(m[2],10)+delta); inp.value=m[1]+n+m[3]; }
+  if(m){ const n=Math.max(1, parseInt(m[2],10)+delta); inp.value=m[1]+n+m[3]; }
   else if(delta>0){ inp.value='1'; }
 }
 function preencherDoTexto(){
