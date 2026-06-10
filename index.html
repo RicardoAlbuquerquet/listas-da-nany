@@ -392,9 +392,10 @@ function drawCard(cv,s,bx,by,bw,bh){
   const areaTop=by+L.headH, areaH=bh-L.headH;
   let usedRows=0; for(const r of L.rows) usedRows+=r.rh;
   const n=L.rows.length, extra=Math.max(0,areaH-usedRows-L.gap*0.5);
-  const slot=n>0?Math.min(extra/n, L.lh*1.2):0;          // limita o espaçamento extra por linha
-  const leftover=extra-slot*n;                            // sobra de espaço: usada para centralizar
-  let y=areaTop+L.gap*0.4+Math.max(0,leftover)/2;
+  const slot=n>0?Math.min(extra/n, L.lh*1.0):0;          // espaçamento por linha (parecido com cards cheios)
+  const leftover=extra-slot*n;                            // sobra: pequeno respiro abaixo do título, resto fica embaixo
+  const topPad=Math.min(Math.max(0,leftover)/2, L.lh*1.0);
+  let y=areaTop+L.gap*0.4+topPad;
   for(const r of L.rows){
     const rowH=r.rh+slot, midY=y+rowH/2;
     cv.rectStroke(bx+ip,midY-L.cb/2,L.cb,L.cb,0.40,0.35);
