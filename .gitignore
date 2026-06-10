@@ -8,6 +8,9 @@ debug.log
 cirurgias-backup-*.json
 cirurgias-da-nany.json
 
+# Arquivos locais do editor/agente
+.claude/
+
 # Sistema operacional
 Thumbs.db
 desktop.ini

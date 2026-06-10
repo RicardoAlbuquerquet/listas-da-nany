@@ -107,31 +107,58 @@
     box-shadow:0 8px 30px rgba(0,0,0,.18); background:#fff; }
 
   /* modal editor */
-  .modal-overlay{ position:fixed; inset:0; background:rgba(20,28,36,.55); display:none;
-    align-items:flex-start; justify-content:center; padding:30px 16px; overflow:auto; z-index:50; }
-  .modal-overlay.show{ display:flex; }
-  .modal{ background:var(--paper); border-radius:12px; width:100%; max-width:560px;
-    box-shadow:0 20px 60px rgba(0,0,0,.35); padding:20px; }
-  .modal h3{ margin:0 0 4px; font-size:17px; color:var(--accent-d); }
-  .modal .sub2{ font-size:12.5px; color:var(--muted); margin:0 0 14px; }
+  .modal-overlay{ position:fixed; inset:0; background:rgba(18,26,34,.5); -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px);
+    display:none; align-items:flex-start; justify-content:center; padding:28px 16px; overflow:auto; z-index:50; }
+  .modal-overlay.show{ display:flex; animation:ovIn .18s ease; }
+  @keyframes ovIn{ from{ opacity:0; } to{ opacity:1; } }
+  .modal{ background:var(--paper); border-radius:14px; width:100%; max-width:580px;
+    box-shadow:0 24px 70px rgba(0,0,0,.4); display:flex; flex-direction:column; max-height:90vh; overflow:hidden;
+    animation:mdIn .2s cubic-bezier(.2,.8,.25,1); }
+  @keyframes mdIn{ from{ opacity:0; transform:translateY(12px) scale(.985); } to{ opacity:1; transform:none; } }
+
+  .modal-head{ display:flex; align-items:flex-start; gap:12px; padding:18px 20px 14px; border-bottom:1px solid var(--line); }
+  .modal-head .ttl{ flex:1; min-width:0; }
+  .modal-head h3{ margin:0; font-size:17px; color:var(--accent-d); }
+  .modal-head .sub2{ font-size:12.5px; color:var(--muted); margin:5px 0 0; line-height:1.45; }
+  .modal-x{ border:none; background:var(--surface); color:var(--muted); border-radius:8px; width:32px; height:32px;
+    font-size:15px; line-height:1; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .modal-x:hover{ background:#e6e9ec; color:var(--ink); }
+
+  .modal-body{ padding:16px 20px; overflow:auto; flex:1; min-height:0; }
+  #edNome{ font-size:15px; padding:12px 14px; }
+
   .mat-head{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; color:var(--muted);
-    text-transform:uppercase; letter-spacing:.03em; margin:10px 0 6px; }
-  .mat-head .h-nm{ flex:1; } .mat-head .h-qt{ width:150px; } .mat-head .h-x{ width:34px; }
-  .mat-rows{ display:flex; flex-direction:column; gap:7px; max-height:300px; overflow:auto; padding-right:2px; }
-  .mat-row{ display:flex; align-items:center; gap:8px; }
-  .mat-row .nm{ flex:1; }
-  .qty-box{ display:flex; align-items:center; gap:0; width:150px; flex-shrink:0; }
-  .qty-box input{ text-align:center; border-radius:0; }
-  .qty-box .step{ width:34px; flex-shrink:0; border:1px solid var(--line); background:var(--surface);
-    font-size:17px; font-weight:700; color:var(--accent-d); padding:9px 0; cursor:pointer; }
-  .qty-box .step.minus{ border-radius:8px 0 0 8px; }
-  .qty-box .step.plus{ border-radius:0 8px 8px 0; }
-  .qty-box .step:hover{ background:#e6e9ec; }
-  .row-x{ width:34px; flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:8px;
-    padding:9px 0; cursor:pointer; color:var(--muted); }
+    text-transform:uppercase; letter-spacing:.03em; margin:18px 0 8px; }
+  .mat-head .h-nm{ flex:1; display:flex; align-items:center; gap:7px; }
+  .mat-head .count{ background:var(--surface); border:1px solid var(--line); color:var(--accent-d);
+    border-radius:999px; padding:1px 8px; font-size:11px; letter-spacing:0; }
+  .mat-head .h-qt{ width:124px; text-align:center; } .mat-head .h-x{ width:34px; }
+
+  .mat-rows{ display:flex; flex-direction:column; gap:8px; counter-reset:matc; }
+  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; }
+  @keyframes rowIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+  .mat-row::before{ counter-increment:matc; content:counter(matc); width:20px; flex-shrink:0; text-align:center;
+    font-size:11.5px; font-weight:700; color:var(--muted); }
+  .mat-row .nm{ flex:1; min-width:0; }
+  .qty-box{ display:flex; align-items:stretch; width:124px; flex-shrink:0; border:1px solid var(--line);
+    border-radius:9px; overflow:hidden; background:#fff; }
+  .qty-box:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); }
+  .qty-box input{ border:none; border-radius:0; background:transparent; text-align:center; padding:9px 2px; width:100%; min-width:0; }
+  .qty-box input:focus{ box-shadow:none; background:transparent; }
+  .qty-box .step{ width:36px; flex-shrink:0; border:none; background:var(--surface); font-size:18px; font-weight:700;
+    color:var(--accent-d); cursor:pointer; }
+  .qty-box .step.minus{ border-right:1px solid var(--line); }
+  .qty-box .step.plus{ border-left:1px solid var(--line); }
+  .qty-box .step:hover{ background:#e2e6ea; }
+  .qty-box .step:active{ background:#d6dbe0; }
+  .row-x{ width:34px; height:38px; flex-shrink:0; border:1px solid var(--line); background:#fff; border-radius:9px;
+    cursor:pointer; color:var(--muted); font-size:13px; }
   .row-x:hover{ background:#fdeceb; color:var(--danger); border-color:#f3c6c2; }
-  .modal .foot{ display:flex; gap:10px; margin-top:18px; }
-  .modal .foot .spacer{ flex:1; }
+
+  .add-mat{ width:100%; justify-content:center; margin-top:10px; border-style:dashed; }
+
+  .modal-foot{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-top:1px solid var(--line); background:var(--surface2); }
+  .modal-foot .spacer{ flex:1; }
 </style>
 </head>
 <body>
@@ -212,31 +239,37 @@
   <!-- MODAL EDITOR -->
   <div class="modal-overlay" id="editor">
     <div class="modal">
-      <h3 id="edTitulo">Nova cirurgia</h3>
-      <p class="sub2">Dê um nome e liste os materiais com suas quantidades. Fica salvo no catálogo para reutilizar.</p>
-      <label for="edNome">Nome da cirurgia</label>
-      <input type="text" id="edNome" placeholder="Ex.: CVL SUS, Histerectomia…" autocomplete="off">
-
-      <div class="mat-head">
-        <span class="h-nm">Material</span>
-        <span class="h-qt">Quantidade</span>
-        <span class="h-x"></span>
-      </div>
-      <div class="mat-rows" id="edMatRows"></div>
-      <div class="btns" style="margin-top:10px">
-        <button class="btn-ghost btn-sm" onclick="addMatRow()">➕ Adicionar material</button>
-      </div>
-
-      <details style="margin-top:14px">
-        <summary>📋 Colar lista (rápido)</summary>
-        <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole os materiais no formato <code>Material - quantidade</code> (um por linha) e clique abaixo para preencher as linhas automaticamente.</p>
-        <textarea id="edColar" spellcheck="false" style="min-height:120px" placeholder="Vicryl 4-0 incolor- 2&#10;Luva 6,5- 4&#10;…"></textarea>
-        <div class="btns">
-          <button class="btn-ghost btn-sm" onclick="preencherDoTexto()">Preencher a partir do texto</button>
+      <div class="modal-head">
+        <div class="ttl">
+          <h3 id="edTitulo">Nova cirurgia</h3>
+          <p class="sub2">Dê um nome e liste os materiais com suas quantidades. Fica salvo no catálogo para reutilizar.</p>
         </div>
-      </details>
+        <button class="modal-x" title="Fechar" onclick="fecharEditor()">✕</button>
+      </div>
 
-      <div class="foot">
+      <div class="modal-body">
+        <label for="edNome">Nome da cirurgia</label>
+        <input type="text" id="edNome" placeholder="Ex.: CVL SUS, Histerectomia…" autocomplete="off">
+
+        <div class="mat-head">
+          <span class="h-nm">Materiais <span class="count" id="edMatCount">0</span></span>
+          <span class="h-qt">Quantidade</span>
+          <span class="h-x"></span>
+        </div>
+        <div class="mat-rows" id="edMatRows"></div>
+        <button class="btn-ghost btn-sm add-mat" onclick="addMatRow('','1',true)">➕ Adicionar material</button>
+
+        <details style="margin-top:16px">
+          <summary>📋 Colar lista (rápido)</summary>
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 6px">Cole os materiais no formato <code>Material - quantidade</code> (um por linha) e clique abaixo para preencher as linhas automaticamente.</p>
+          <textarea id="edColar" spellcheck="false" style="min-height:120px" placeholder="Vicryl 4-0 incolor- 2&#10;Luva 6,5- 4&#10;…"></textarea>
+          <div class="btns">
+            <button class="btn-ghost btn-sm" onclick="preencherDoTexto()">Preencher a partir do texto</button>
+          </div>
+        </details>
+      </div>
+
+      <div class="modal-foot">
         <button class="btn-ghost" onclick="fecharEditor()">Cancelar</button>
         <span class="spacer"></span>
         <button class="btn-primary" onclick="salvarEditor()">✔ Salvar no catálogo</button>
@@ -680,7 +713,7 @@ function abrirEditor(id){
 }
 function fecharEditor(){ document.getElementById('editor').classList.remove('show'); }
 
-function addMatRow(name='', qty='1'){
+function addMatRow(name='', qty='1', focus=false){
   const rows=document.getElementById('edMatRows');
   const div=document.createElement('div'); div.className='mat-row';
   div.innerHTML=`
@@ -690,9 +723,18 @@ function addMatRow(name='', qty='1'){
       <input type="text" class="qt" value="${esc2(qty)}">
       <button type="button" class="step plus" onclick="bumpQty(this,1)" tabindex="-1">+</button>
     </div>
-    <button type="button" class="row-x" title="Remover" onclick="this.closest('.mat-row').remove()">✕</button>`;
+    <button type="button" class="row-x" title="Remover" onclick="removerMat(this)">✕</button>`;
   rows.appendChild(div);
+  // Enter no nome cria a próxima linha (entrada rápida)
+  div.querySelector('.nm').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addMatRow('','1',true); } });
+  atualizarContagemMat();
+  if(focus) div.querySelector('.nm').focus();
   return div;
+}
+function removerMat(btn){ btn.closest('.mat-row').remove(); atualizarContagemMat(); }
+function atualizarContagemMat(){
+  const el=document.getElementById('edMatCount');
+  if(el) el.textContent=document.querySelectorAll('#edMatRows .mat-row').length;
 }
 function bumpQty(btn, delta){
   const inp=btn.closest('.qty-box').querySelector('.qt');
