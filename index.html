@@ -84,6 +84,11 @@
     background:var(--surface2); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
   .hint b{ color:var(--accent-d); }
 
+  .chk{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--accent-d);
+    font-weight:600; cursor:pointer; user-select:none; }
+  .chk input{ width:17px; height:17px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+  .chk .chk-sub{ color:var(--muted); font-weight:500; }
+
   details{ margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--surface2); padding:9px 12px; font-size:12.5px; color:var(--ink); }
   details summary{ cursor:pointer; font-weight:700; color:var(--accent-d); }
   details ul{ margin:9px 0 2px; padding-left:18px; line-height:1.6; }
@@ -272,6 +277,7 @@
           <button class="btn-ghost btn-sm" onclick="usarExemplo()">Usar exemplo</button>
           <button class="btn-ghost btn-sm" onclick="limparDia()">Limpar dia</button>
         </div>
+        <label class="chk"><input type="checkbox" id="chkResumo" checked onchange="toggleResumo(this.checked)"> Incluir <b>Resumo do dia</b> no PDF <span class="chk-sub">(soma os materiais de todas as cirurgias)</span></label>
         <div class="status" id="status"></div>
 
         <details>
@@ -426,7 +432,8 @@ function drawCard(cv,s,bx,by,bw,bh){
   cv.rectFill(bx,by,bw,L.headH,0.925);
   cv.line(bx,by+L.headH,bx+bw,by+L.headH,0.69,0.4,null);
   cv.text(s.title.toUpperCase(),bx+ip,by+1.0,L.headSz,true,0.07,'l');
-  cv.text(s.items.length+' itens',0,by+1.6,L.cntSz,false,0.33,'r',bx+bw-ip);
+  let _pc=0; for(const it of s.items){ const m=String(it.qtyLabel).match(/\d+/); if(m) _pc+=parseInt(m[0],10); }
+  cv.text(s.items.length+' itens'+(_pc?' · '+_pc+' pç':''),0,by+1.6,L.cntSz,false,0.33,'r',bx+bw-ip);
   const areaTop=by+L.headH, areaH=bh-L.headH;
   let usedRows=0; for(const r of L.rows) usedRows+=r.rh;
   const n=L.rows.length, extra=Math.max(0,areaH-usedRows-L.gap*0.5);
@@ -454,6 +461,124 @@ function drawPage(cv,subset){
   cv.scissors(QW,0.6,9,0.45); cv.scissors(QW,PHmm-4.0,9,0.45);
   cv.scissors(2.2,QH-3.0,9,0.45); cv.scissors(PWmm-3.2,QH-3.0,9,0.45);
 }
+/* =====================================================================
+   PDF INTELIGENTE — categorias, consolidação e página de "Resumo do dia"
+   ===================================================================== */
+const CATS=[
+  {key:'Fios e suturas', kws:['vicryl','prolene','caprofyl','monocryl','mononylon','nylon','catgut','pds','sutupack','seda','poliester','poliéster','fio','agulhada']},
+  {key:'Luvas', kws:['luva']},
+  {key:'Agulhas e seringas', kws:['agulha','ag.','seringa']},
+  {key:'Soluções e medicações', kws:['soro','bupi','ropi','xylo','transamin','marcaina','marcaína','lido','degermante','clorexidina','povidine','adrenalina','glicose']},
+  {key:'Descartáveis e diversos', kws:['clip','trocater','dreno','capa','barreira','compressa','advanced','lixa','bisturi','prolongador','prologador','gaze','campo','avental','sonda','coletor','cateter','lamina','lâmina']}
+];
+function categoria(name){ const n=norm(name); for(const c of CATS){ if(c.kws.some(k=>n.includes(norm(k)))) return c.key; } return 'Outros'; }
+function numQtd(label){ const m=String(label).match(/\d+/); return m?parseInt(m[0],10):null; }
+function consolidarDia(surgeries){
+  const map=new Map();
+  for(const s of surgeries) for(const it of s.items){
+    const key=norm(it.name); let e=map.get(key);
+    if(!e){ e={name:it.name, total:0, surg:new Set(), obs:false}; map.set(key,e); }
+    const n=numQtd(it.qtyLabel); if(n!=null) e.total+=n; else e.obs=true;
+    if(/[a-zà-ú]/i.test(String(it.qtyLabel).replace(/[\d\s.,\-x×]/gi,''))) e.obs=true;
+    e.surg.add(norm(s.title));
+  }
+  const ordem=[...CATS.map(c=>c.key),'Outros'];
+  const grupos=new Map(ordem.map(k=>[k,[]]));
+  for(const e of map.values()) grupos.get(categoria(e.name)).push(e);
+  for(const arr of grupos.values()) arr.sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+  return ordem.filter(k=>grupos.get(k).length).map(k=>[k, grupos.get(k)]);
+}
+function metaResumo(surgeries){
+  let pecas=0; const mats=new Set();
+  for(const s of surgeries) for(const it of s.items){ mats.add(norm(it.name)); const n=numQtd(it.qtyLabel); if(n!=null) pecas+=n; }
+  return { sub:`${surgeries.length} cirurgia(s)   ·   ${mats.size} materiais   ·   ${pecas} peças` };
+}
+const RES_M=12, RES_GAP=9, RES_COLW=(PWmm-2*RES_M-RES_GAP)/2, RES_CATH=8.8, RES_ITEMH=5.8, RES_TOPFIRST=15.5;
+function linhasResumo(cats){
+  const linhas=[];
+  for(const [cat,arr] of cats){ linhas.push({t:'cat',label:cat}); for(const e of arr) linhas.push({t:'item',e}); }
+  return linhas;
+}
+function catVigente(linhas,i){ for(let j=i-1;j>=0;j--) if(linhas[j].t==='cat') return linhas[j]; return null; }
+function fluxoResumo(linhas){
+  const usableH=PHmm-2*RES_M, hOf=l=> l.t==='cat'?RES_CATH:RES_ITEMH;
+  const total=linhas.reduce((a,l)=>a+hOf(l),0);
+  const capP0=usableH-RES_TOPFIRST, capN=usableH;
+  const umaPagina = total <= capP0*2;        // cabe tudo numa folha (2 colunas)?
+  const colunas=[]; let i=0, p=0;
+  while(i<linhas.length){
+    const cap = p<2 ? capP0 : capN;
+    const balancear = umaPagina && p<2;        // só balanceia quando cabe em 1 folha
+    const alvo = balancear ? total/2 : cap;
+    const col=[]; let h=0;
+    const cat=catVigente(linhas,i);            // se começa no meio de uma categoria, repete o cabeçalho
+    if(linhas[i] && linhas[i].t!=='cat' && cat){ col.push({t:'cat',label:cat.label,cont:true}); h+=RES_CATH; }
+    while(i<linhas.length){
+      const ln=linhas[i], hh=hOf(ln), prox=linhas[i+1]?hOf(linhas[i+1]):0;
+      if(h>0 && h+hh>cap) break;                                   // não estoura a coluna
+      if(h>0 && ln.t==='cat' && h+hh+prox>cap) break;              // não deixa cabeçalho órfão no fim
+      if(h>0 && ln.t==='cat' && balancear && h>=alvo*0.85) break;  // quebra limpa entre categorias perto do alvo
+      if(h>0 && balancear && ln.t!=='cat' && col[col.length-1].t!=='cat' && h>=alvo) break; // categoria grande: divide
+      col.push(ln); h+=hh; i++;
+    }
+    while(col.length && col[col.length-1].t==='cat'){ col.pop(); i--; } // remove cabeçalho que ficou sozinho
+    if(!col.length && i<linhas.length){ col.push(linhas[i]); i++; }     // segurança contra travar
+    colunas.push(col); p++;
+  }
+  const pages=[];
+  for(let k=0;k<colunas.length;k+=2) pages.push({primeira:k===0, cols:[colunas[k]||[], colunas[k+1]||[]]});
+  return pages;
+}
+function ajustarTexto(str,maxMm,sizePt,bold){
+  if(textWidth(str,sizePt,bold)<=maxMm) return str;
+  let s=String(str); while(s.length>1 && textWidth(s+'…',sizePt,bold)>maxMm) s=s.slice(0,-1);
+  return s+'…';
+}
+function drawSummaryPage(cv,page,meta){
+  let top=RES_M+1;
+  if(page.primeira){
+    cv.text('RESUMO DO DIA',RES_M,RES_M,15,true,0.07,'l');
+    cv.text(meta.sub,0,RES_M+2.4,8.5,false,0.40,'r',PWmm-RES_M);
+    cv.line(RES_M,RES_M+9.6,PWmm-RES_M,RES_M+9.6,0.6,0.5,null);
+    top=RES_M+RES_TOPFIRST;
+  }
+  const colX=[RES_M, RES_M+RES_COLW+RES_GAP], cb=3.4, qW=12;
+  for(let c=0;c<2;c++){
+    let y=top; const x=colX[c];
+    for(const ln of page.cols[c]){
+      if(ln.t==='cat'){
+        cv.text(ln.label.toUpperCase()+(ln.cont?'  (cont.)':''), x, y+2.6, 8, true, 0.32, 'l');
+        cv.line(x, y+7.1, x+RES_COLW, y+7.1, 0.82, 0.3, null);
+        y+=RES_CATH;
+      } else {
+        const e=ln.e, midY=y+RES_ITEMH/2, alta=e.total>=6;
+        cv.rectStroke(x, midY-cb/2, cb, cb, 0.45, 0.3);
+        const qh=4.4, qx=x+RES_COLW-qW;
+        if(alta) cv.rectFill(qx, midY-qh/2, qW, qh, 0.86);
+        cv.rectStroke(qx, midY-qh/2, qW, qh, 0.5, 0.3);
+        cv.text(String(e.total)+(e.obs?'*':''), qx+qW/2, midY-9*0.352778*0.62, 9, true, 0.07, 'c');
+        const nameX=x+cb+2.2;
+        const suf = e.surg.size>1 ? ' · '+e.surg.size+' cir.' : '';
+        const sufW = suf?textWidth(suf,7.5,false)+1:0;
+        const nm=ajustarTexto(e.name, RES_COLW-cb-2.2-qW-2-sufW, 9, false);
+        cv.text(nm, nameX, midY-9*0.352778*0.62, 9, false, 0.10, 'l');
+        if(suf) cv.text(suf, nameX+textWidth(nm,9,false)+1, midY-7.5*0.352778*0.62, 7.5, false, 0.42, 'l');
+        y+=RES_ITEMH;
+      }
+    }
+  }
+  if(page.primeira) cv.text('Fundo cinza = 6+ peças   ·   "· N cir." = usado em N cirurgias   ·   * = conferir quantidade', RES_M, PHmm-RES_M+2.6, 7, false, 0.5, 'l');
+}
+function renderPagina(cv,p){ if(p.tipo==='resumo') drawSummaryPage(cv,p.page,p.meta); else drawPage(cv,p.subset); }
+function montarPaginasDoDia(surgeries){
+  const pages=chunk(surgeries,MAX_POR_PAGINA).map(sub=>({tipo:'cards',subset:sub}));
+  if(incluirResumo && surgeries.length){
+    const meta=metaResumo(surgeries);
+    fluxoResumo(linhasResumo(consolidarDia(surgeries))).forEach(rp=>pages.push({tipo:'resumo',page:rp,meta}));
+  }
+  return pages;
+}
+
 function buildPDF(paginas){
   const pdf=new PdfBuilder();
   pdf.add('<< /Type /Catalog /Pages 2 0 R >>');
@@ -462,8 +587,8 @@ function buildPDF(paginas){
   pdf.add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   pdf.add('<< /Type /Font /Subtype /Type1 /BaseFont /ZapfDingbats >>');
   const kids=[];
-  for(const subset of paginas){
-    const cv=new Canvas(); drawPage(cv,subset);
+  for(const p of paginas){
+    const cv=new Canvas(); renderPagina(cv,p);
     const content=cv.ops.join('\n');
     const streamObj=pdf.add('<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
     const pageObj=pdf.add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PWpt.toFixed(2)+' '+PHpt.toFixed(2)+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> /Contents '+streamObj+' 0 R >>');
@@ -482,7 +607,7 @@ SvgCanvas.prototype.line=function(x1,y1,x2,y2,g,lw,dash){ const d=dash?` stroke-
 SvgCanvas.prototype.text=function(str,x,topY,sizePt,bold,g,align,rightX){ const fs=sizePt*0.352778, base=topY+fs*0.80; let tx=x,a='start'; if(align==='r'){tx=rightX;a='end';} else if(align==='c'){a='middle';} const t=String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;'); this.s+=`<text x="${tx.toFixed(2)}" y="${base.toFixed(2)}" font-family="Arial,Helvetica,sans-serif" font-size="${fs.toFixed(2)}" font-weight="${bold?'700':'400'}" fill="${g2rgb(g)}" text-anchor="${a}">${t}</text>`; };
 SvgCanvas.prototype.scissors=function(cx,topY,sizePt,g){ const fs=sizePt*0.352778, base=topY+fs*0.80; this.s+=`<text x="${cx.toFixed(2)}" y="${base.toFixed(2)}" font-size="${fs.toFixed(2)}" text-anchor="middle" fill="${g2rgb(g)}">✂</text>`; };
 function buildSVGPages(paginas){
-  return paginas.map(subset=>{ const cv=new SvgCanvas(); drawPage(cv,subset);
+  return paginas.map(p=>{ const cv=new SvgCanvas(); renderPagina(cv,p);
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="xMidYMid meet">${cv.s}</svg>`; });
 }
 
@@ -602,6 +727,7 @@ Soro 1000- 1`;
 let catalogo=[];      // [{id,title,items:[{name,qtyLabel}],updatedAt}]
 let dia=[];           // [{title,items:[{name,qtyLabel}]}] — o que vira PDF
 let editId=null;      // id em edição (null = nova)
+let incluirResumo=true; // adiciona a página "Resumo do dia" ao PDF
 let fsHandle=null;    // FileSystemFileHandle do backup automático
 let fsOn=false;       // backup automático ativo e com permissão
 
@@ -1014,11 +1140,13 @@ function renderPreview(){
     pagesEl.innerHTML='<div class="empty">Adicione cirurgias à lista do dia para ver as folhas aqui.</div>';
     document.getElementById('status').textContent=''; return;
   }
-  const paginas=chunk(dia,MAX_POR_PAGINA);
+  const paginas=montarPaginasDoDia(dia);
   pagesEl.innerHTML=buildSVGPages(paginas).join('');
   const totalItens=dia.reduce((n,s)=>n+s.items.length,0);
+  const nResumo=paginas.filter(p=>p.tipo==='resumo').length;
+  const nCards=paginas.length-nResumo;
   document.getElementById('status').textContent=
-    `${dia.length} cirurgia(s) · ${totalItens} ${totalItens===1?'item':'itens'} · ${paginas.length} folha(s).`;
+    `${dia.length} cirurgia(s) · ${totalItens} ${totalItens===1?'item':'itens'} · ${nCards} folha(s)${nResumo?' + resumo':''}.`;
 }
 async function adicionarAoDia(id){
   const s=catalogo.find(x=>x.id===id); if(!s) return;
@@ -1038,6 +1166,7 @@ async function limparDia(){
   dia=[]; renderDia();
 }
 function usarExemplo(){ dia=parseAll(SEMENTE).map(clone); renderDia(); }
+function toggleResumo(v){ incluirResumo=v; renderPreview(); }
 function adicionarColado(){
   const txt=document.getElementById('txtColar').value;
   const novas=parseAll(txt).map(clone);
@@ -1048,7 +1177,7 @@ function adicionarColado(){
 
 function baixarPDF(){
   if(!dia.length){ alert('Adicione cirurgias à lista do dia primeiro.'); return; }
-  const str=buildPDF(chunk(dia,MAX_POR_PAGINA));
+  const str=buildPDF(montarPaginasDoDia(dia));
   const bytes=new Uint8Array(str.length);
   for(let i=0;i<str.length;i++) bytes[i]=str.charCodeAt(i)&0xff;
   const blob=new Blob([bytes],{type:'application/pdf'});
