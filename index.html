@@ -911,6 +911,8 @@ function renderPreview(){
 }
 function adicionarAoDia(id){
   const s=catalogo.find(x=>x.id===id); if(!s) return;
+  const jaNoDia=dia.some(d=>norm(d.title)===norm(s.title));
+  if(jaNoDia && !confirm(`“${s.title}” já está na lista do dia.\n\nQuer adicionar mesmo assim? (vai ficar duplicada)`)) return;
   dia.push(clone(s));
   s.usos=(s.usos||0)+1; salvarCatalogo();
   renderDia();
