@@ -143,10 +143,17 @@
   .mat-head .h-qt{ width:134px; text-align:center; } .mat-head .h-x{ width:36px; }
 
   .mat-rows{ display:flex; flex-direction:column; gap:8px; counter-reset:matc; }
-  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; }
+  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; counter-increment:matc; }
   @keyframes rowIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
-  .mat-row::before{ counter-increment:matc; content:counter(matc); width:20px; flex-shrink:0; text-align:center;
-    font-size:11.5px; font-weight:700; color:var(--muted); }
+  .mat-row.dragging{ opacity:.55; }
+  .grip{ width:26px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    cursor:grab; color:var(--muted); font-size:11.5px; font-weight:700; border-radius:7px;
+    touch-action:none; user-select:none; -webkit-user-select:none; position:relative; }
+  .grip::before{ content:counter(matc); }
+  .grip::after{ content:"⋮⋮"; position:absolute; left:1px; top:50%; transform:translateY(-50%);
+    font-size:11px; letter-spacing:-2px; color:var(--line); }
+  .grip:hover{ background:var(--surface); color:var(--accent-d); }
+  .grip:active{ cursor:grabbing; }
   .mat-row .nm{ flex:1; min-width:0; }
   .qty-box{ display:flex; align-items:stretch; width:134px; height:40px; flex-shrink:0; border:1px solid var(--line);
     border-radius:10px; overflow:hidden; background:#fff; transition:border-color .12s, box-shadow .12s; }
@@ -668,7 +675,7 @@ async function restaurarBackup(file){
     const arr = Array.isArray(obj) ? obj : (obj && Array.isArray(obj.catalogo) ? obj.catalogo : null);
     if(!arr) throw 0;
     const limpos=arr.filter(s=>s && s.title && Array.isArray(s.items))
-      .map(s=>({ id:s.id||uid(), title:String(s.title), updatedAt:s.updatedAt||Date.now(),
+      .map(s=>({ id:s.id||uid(), title:String(s.title), updatedAt:s.updatedAt||Date.now(), usos:s.usos||0,
         items:s.items.filter(it=>it&&it.name).map(it=>({name:String(it.name), qtyLabel:String(it.qtyLabel||'1')})) }));
     if(!limpos.length) throw 0;
     if(!confirm(`Restaurar ${limpos.length} cirurgia(s) do backup?\n\nIsto substitui o catálogo atual (${catalogo.length} cirurgia(s)).`)) return;
@@ -717,7 +724,7 @@ function renderCatalogo(){
   document.getElementById('catCount').textContent=catalogo.length;
   const lista=catalogo
     .filter(s=>!q || norm(s.title).includes(q) || s.items.some(it=>norm(it.name).includes(q)))
-    .sort((a,b)=>a.title.localeCompare(b.title,'pt'));
+    .sort((a,b)=>(b.usos||0)-(a.usos||0) || a.title.localeCompare(b.title,'pt'));
   if(!catalogo.length){
     wrap.innerHTML='<div class="empty">Seu catálogo está vazio.<br>Clique em <b>➕ Nova cirurgia</b> para começar.</div>'; return;
   }
@@ -727,7 +734,7 @@ function renderCatalogo(){
     if(q && !norm(s.title).includes(q)){
       const m=s.items.find(it=>norm(it.name).includes(q));
       if(m) meta+=` · usa “${esc2(m.name)}”`;
-    }
+    } else if(!q && s.usos){ meta+=` · usada ${s.usos}×`; }
     return `
     <div class="cat-item">
       <div class="info">
@@ -782,6 +789,7 @@ function addMatRow(name='', qty='1', focus=false){
   const rows=document.getElementById('edMatRows');
   const div=document.createElement('div'); div.className='mat-row';
   div.innerHTML=`
+    <span class="grip" title="Arraste para reordenar" onpointerdown="gripPointerDown(event)"></span>
     <input type="text" class="nm" placeholder="Nome do material" value="${esc2(name)}">
     <div class="qty-box">
       <button type="button" class="step minus" onclick="bumpQty(this,-1)" tabindex="-1">−</button>
@@ -800,6 +808,34 @@ function removerMat(btn){ btn.closest('.mat-row').remove(); atualizarContagemMat
 function atualizarContagemMat(){
   const el=document.getElementById('edMatCount');
   if(el) el.textContent=document.querySelectorAll('#edMatRows .mat-row').length;
+}
+
+/* arrastar para reordenar materiais (Pointer Events — mouse e toque) */
+let dragRow=null;
+function gripPointerDown(e){
+  const grip=e.currentTarget, row=grip.closest('.mat-row'); if(!row) return;
+  e.preventDefault();
+  dragRow=row; row.classList.add('dragging');
+  grip.setPointerCapture(e.pointerId);
+  grip.addEventListener('pointermove', gripPointerMove);
+  grip.addEventListener('pointerup', gripPointerUp);
+  grip.addEventListener('pointercancel', gripPointerUp);
+}
+function gripPointerMove(e){
+  if(!dragRow) return;
+  const cont=document.getElementById('edMatRows');
+  const outros=[...cont.querySelectorAll('.mat-row:not(.dragging)')];
+  const depois=outros.find(r=>{ const rc=r.getBoundingClientRect(); return e.clientY < rc.top + rc.height/2; });
+  if(depois) cont.insertBefore(dragRow, depois); else cont.appendChild(dragRow);
+}
+function gripPointerUp(e){
+  const grip=e.currentTarget;
+  if(dragRow) dragRow.classList.remove('dragging');
+  dragRow=null;
+  grip.removeEventListener('pointermove', gripPointerMove);
+  grip.removeEventListener('pointerup', gripPointerUp);
+  grip.removeEventListener('pointercancel', gripPointerUp);
+  try{ grip.releasePointerCapture(e.pointerId); }catch(_){}
 }
 function bumpQty(btn, delta){
   const inp=btn.closest('.qty-box').querySelector('.qt');
@@ -866,12 +902,15 @@ function renderPreview(){
   }
   const paginas=chunk(dia,MAX_POR_PAGINA);
   pagesEl.innerHTML=buildSVGPages(paginas).join('');
+  const totalItens=dia.reduce((n,s)=>n+s.items.length,0);
   document.getElementById('status').textContent=
-    `${dia.length} cirurgia(s) em ${paginas.length} folha(s) — 4 espaços iguais por folha.`;
+    `${dia.length} cirurgia(s) · ${totalItens} ${totalItens===1?'item':'itens'} · ${paginas.length} folha(s).`;
 }
 function adicionarAoDia(id){
   const s=catalogo.find(x=>x.id===id); if(!s) return;
-  dia.push(clone(s)); renderDia();
+  dia.push(clone(s));
+  s.usos=(s.usos||0)+1; salvarCatalogo();
+  renderDia();
   document.getElementById('status').textContent=`“${s.title}” adicionada à lista do dia.`;
 }
 function removerDoDia(i){ dia.splice(i,1); renderDia(); }
@@ -893,7 +932,8 @@ function baixarPDF(){
   for(let i=0;i<str.length;i++) bytes[i]=str.charCodeAt(i)&0xff;
   const blob=new Blob([bytes],{type:'application/pdf'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='Cirurgias do Dia.pdf';
+  const d=new Date(), yy=d.getFullYear(), mm=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  const a=document.createElement('a'); a.href=url; a.download=`Cirurgias ${yy}-${mm}-${dd}.pdf`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
