@@ -168,11 +168,15 @@
   .mat-head .h-nm{ flex:1; display:flex; align-items:center; gap:7px; }
   .mat-head .count{ background:var(--surface); border:1px solid var(--line); color:var(--accent-d);
     border-radius:999px; padding:1px 8px; font-size:11px; letter-spacing:0; }
-  .mat-head .h-qt{ width:134px; text-align:center; } .mat-head .h-x{ width:36px; }
+  .mat-head .h-cat{ width:124px; } .mat-head .h-qt{ width:134px; text-align:center; } .mat-head .h-x{ width:36px; }
 
   .mat-rows{ display:flex; flex-direction:column; gap:8px; counter-reset:matc; }
-  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; counter-increment:matc;
+  .mat-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; animation:rowIn .15s ease; counter-increment:matc;
     border-radius:10px; transition:box-shadow .15s, background .15s; }
+  .mat-controls{ display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+  .cat-sel{ width:124px; height:38px; flex-shrink:0; border:1px solid var(--line); border-radius:9px; background:#fff;
+    color:var(--accent-d); font-family:inherit; font-size:12.5px; font-weight:600; padding:0 6px; cursor:pointer; }
+  .cat-sel:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); outline:none; }
   @keyframes rowIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
   .mat-row.dragging{ background:#fff; outline:1.5px solid var(--accent); outline-offset:1px;
     box-shadow:0 14px 32px rgba(20,28,36,.22); position:relative; z-index:5; cursor:grabbing; }
@@ -184,7 +188,7 @@
   .grip:hover{ background:var(--surface); color:var(--accent); }
   .grip:hover .gdots{ opacity:1; }
   .grip:active{ cursor:grabbing; background:#e6eaee; }
-  .mat-row .nm{ flex:1; min-width:0; }
+  .mat-row .nm{ flex:1 1 150px; min-width:130px; }
   .qty-box{ display:flex; align-items:stretch; width:134px; height:40px; flex-shrink:0; border:1px solid var(--line);
     border-radius:10px; overflow:hidden; background:#fff; transition:border-color .12s, box-shadow .12s; }
   .qty-box:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(63,81,97,.15); }
@@ -329,6 +333,7 @@
 
         <div class="mat-head">
           <span class="h-nm">Materiais <span class="count" id="edMatCount">0</span></span>
+          <span class="h-cat">Categoria</span>
           <span class="h-qt">Quantidade</span>
           <span class="h-x"></span>
         </div>
@@ -465,13 +470,14 @@ function drawPage(cv,subset){
    PDF INTELIGENTE — categorias, consolidação e página de "Resumo do dia"
    ===================================================================== */
 const CATS=[
-  {key:'Fios e suturas', kws:['vicryl','prolene','caprofyl','monocryl','mononylon','nylon','catgut','pds','sutupack','seda','poliester','poliéster','fio','agulhada']},
+  {key:'Fios e suturas', kws:['vicryl','prolene','caprofyl','monocryl','mononylon','nylon','catgut','pds','sutupack','seda','poliester','poliéster','fio','agulhada','ethibond','ticron','dexon','safil','novosyn','polysorb','surgipro','maxon','monosyn','dafilon','supramid','poliglecaprone','sutura']},
   {key:'Luvas', kws:['luva']},
-  {key:'Agulhas e seringas', kws:['agulha','ag.','seringa']},
-  {key:'Soluções e medicações', kws:['soro','bupi','ropi','xylo','transamin','marcaina','marcaína','lido','degermante','clorexidina','povidine','adrenalina','glicose']},
-  {key:'Descartáveis e diversos', kws:['clip','trocater','dreno','capa','barreira','compressa','advanced','lixa','bisturi','prolongador','prologador','gaze','campo','avental','sonda','coletor','cateter','lamina','lâmina']}
+  {key:'Agulhas e seringas', kws:['agulha','ag.','seringa','jelco','abocath','escalpe','butterfly','insulina']},
+  {key:'Soluções e medicações', kws:['soro','bupi','ropi','xylo','xilo','transamin','marcaina','marcaína','lido','lidocaina','degermante','clorexidina','povidine','povidona','adrenalina','epinefrina','glicose','glicosado','ringer','fisiologico','fisiológico','manitol','heparina','ocitocina','cefazolina','cefalotina','antibiotico','antibiótico','dexametasona','agua destilada','água destilada','alcool','álcool','iodo','vancomicina','garamicina']},
+  {key:'Descartáveis e diversos', kws:['clip','trocater','trocarte','dreno','capa','barreira','compressa','advanced','lixa','bisturi','lamina','lâmina','prolongador','prologador','gaze','campo','avental','capote','touca','mascara','máscara','sonda','coletor','cateter','tela','marlex','mesh','grampeador','grampo','carga','endogia','stapler','cera','hemostatico','hemostático','surgicel','cola','selante','tissucol','atadura','esparadrapo','micropore','fita','bolsa','frasco','equipo','torneirinha','polifix','extensor','conector','aspirador','ponteira','cuba','eletrodo','placa','caneta','monopolar','bipolar','hemoclip','ligasure','harmonico','harmônico','clipador','obturador','canula','cânula','agrafe']}
 ];
-function categoria(name){ const n=norm(name); for(const c of CATS){ if(c.kws.some(k=>n.includes(norm(k)))) return c.key; } return 'Outros'; }
+function categoriaKw(name){ const n=norm(name); for(const c of CATS){ if(c.kws.some(k=>n.includes(norm(k)))) return c.key; } return 'Outros'; }
+function categoria(name){ const m=categoriasManuais[norm(name)]; return m || categoriaKw(name); }
 function numQtd(label){ const m=String(label).match(/\d+/); return m?parseInt(m[0],10):null; }
 function consolidarDia(surgeries){
   const map=new Map();
@@ -636,6 +642,7 @@ function chunk(a,n){ const o=[]; for(let i=0;i<a.length;i+=n) o.push(a.slice(i,i
 const MAX_POR_PAGINA=4;
 const LS_CAT='listas-nany-catalogo';
 const LS_BKP='listas-nany-ultimo-backup';
+const LS_CATMAN='listas-nany-categorias';   // categorias escolhidas pela usuária (nome -> categoria)
 
 /* Catálogo inicial (genérico) usado na 1ª vez e no botão "Usar exemplo" */
 const SEMENTE=
@@ -728,6 +735,7 @@ let catalogo=[];      // [{id,title,items:[{name,qtyLabel}],updatedAt}]
 let dia=[];           // [{title,items:[{name,qtyLabel}]}] — o que vira PDF
 let editId=null;      // id em edição (null = nova)
 let incluirResumo=true; // adiciona a página "Resumo do dia" ao PDF
+let categoriasManuais={}; // categoria escolhida pela usuária por material (norm(nome) -> categoria)
 let fsHandle=null;    // FileSystemFileHandle do backup automático
 let fsOn=false;       // backup automático ativo e com permissão
 
@@ -832,13 +840,17 @@ function carregarCatalogo(){
   }catch(e){}
   return null;
 }
+function carregarCategorias(){
+  try{ const raw=localStorage.getItem(LS_CATMAN); if(raw){ const o=JSON.parse(raw); if(o&&typeof o==='object') categoriasManuais=o; } }catch(e){}
+}
+function salvarCategorias(){ try{ localStorage.setItem(LS_CATMAN, JSON.stringify(categoriasManuais)); }catch(e){} }
 async function salvarCatalogo(){
   try{ localStorage.setItem(LS_CAT, JSON.stringify(catalogo)); }catch(e){}
   if(fsOn && fsHandle){ try{ await escreverArquivo(fsHandle, dadosBackup()); marcarBackup(); }catch(e){ fsOn=false; } }
   atualizarBackupInfo();
 }
 function dadosBackup(){
-  return JSON.stringify({app:'Listas da Nany', versao:1, salvoEm:new Date().toISOString(), catalogo}, null, 2);
+  return JSON.stringify({app:'Listas da Nany', versao:1, salvoEm:new Date().toISOString(), catalogo, categorias:categoriasManuais}, null, 2);
 }
 function marcarBackup(){ try{ localStorage.setItem(LS_BKP, new Date().toISOString()); }catch(e){} }
 
@@ -904,7 +916,9 @@ async function restaurarBackup(file){
     if(!limpos.length) throw 0;
     if(!(await confirmar(`Restaurar ${limpos.length} cirurgia(s) do backup? Isto substitui o catálogo atual (${catalogo.length} cirurgia(s)).`,
         {titulo:'Restaurar backup', okLabel:'Restaurar', cancelLabel:'Cancelar'}))) return;
-    catalogo=limpos; await salvarCatalogo(); renderCatalogo();
+    catalogo=limpos;
+    if(obj && obj.categorias && typeof obj.categorias==='object'){ categoriasManuais=obj.categorias; salvarCategorias(); }
+    await salvarCatalogo(); renderCatalogo();
     alert('✅ Backup restaurado com sucesso!');
   }catch(e){ alert('❌ Não consegui ler esse arquivo de backup. Verifique se é o arquivo .json gerado pelo app.'); }
   document.getElementById('fileRestore').value='';
@@ -1010,23 +1024,33 @@ function abrirEditor(id){
 }
 function fecharEditor(){ document.getElementById('editor').classList.remove('show'); }
 
+const CATSEL=[['auto','Automático'],['Fios e suturas','Fios'],['Luvas','Luvas'],['Agulhas e seringas','Agulhas'],['Soluções e medicações','Soluções'],['Descartáveis e diversos','Descart.'],['Outros','Outros']];
+const CAT_CURTO={'Fios e suturas':'Fios','Luvas':'Luvas','Agulhas e seringas':'Agulhas','Soluções e medicações':'Soluções','Descartáveis e diversos':'Descart.','Outros':'Outros'};
+function opcoesCategoria(sel){ return CATSEL.map(([v,l])=>`<option value="${esc2(v)}"${v===sel?' selected':''}>${l}</option>`).join(''); }
 function addMatRow(name='', qty='1', focus=false){
   const rows=document.getElementById('edMatRows');
   const div=document.createElement('div'); div.className='mat-row';
+  const ov = categoriasManuais[norm(name)] || 'auto';
   div.innerHTML=`
     <span class="grip" title="Arraste para reordenar" onpointerdown="gripPointerDown(event)"><svg class="gdots" width="8" height="14" viewBox="0 0 8 14" aria-hidden="true"><g fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></g></svg></span>
     <input type="text" class="nm" placeholder="Nome do material" value="${esc2(name)}">
-    <div class="qty-box">
-      <button type="button" class="step minus" onclick="bumpQty(this,-1)" tabindex="-1">−</button>
-      <input type="text" class="qt" value="${esc2(qty)}">
-      <button type="button" class="step plus" onclick="bumpQty(this,1)" tabindex="-1">+</button>
-    </div>
-    <button type="button" class="row-x" title="Remover material" onclick="removerMat(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button>`;
+    <div class="mat-controls">
+      <select class="cat-sel" title="Categoria (para o Resumo do dia)">${opcoesCategoria(ov)}</select>
+      <div class="qty-box">
+        <button type="button" class="step minus" onclick="bumpQty(this,-1)" tabindex="-1">−</button>
+        <input type="text" class="qt" value="${esc2(qty)}">
+        <button type="button" class="step plus" onclick="bumpQty(this,1)" tabindex="-1">+</button>
+      </div>
+      <button type="button" class="row-x" title="Remover material" onclick="removerMat(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button>
+    </div>`;
   rows.appendChild(div);
-  // Enter no nome cria a próxima linha (entrada rápida)
-  div.querySelector('.nm').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addMatRow('','1',true); } });
+  const nmInput=div.querySelector('.nm'), sel=div.querySelector('.cat-sel');
+  const autoLabel=()=>{ const v=nmInput.value.trim(); sel.options[0].textContent = v? 'Auto: '+(CAT_CURTO[categoriaKw(v)]||'Outros') : 'Automático'; };
+  autoLabel();
+  nmInput.addEventListener('input', autoLabel);
+  nmInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addMatRow('','1',true); } });
   atualizarContagemMat();
-  if(focus) div.querySelector('.nm').focus();
+  if(focus) nmInput.focus();
   return div;
 }
 function removerMat(btn){ btn.closest('.mat-row').remove(); atualizarContagemMat(); }
@@ -1098,11 +1122,19 @@ function preencherDoTexto(){
 function salvarEditor(){
   const title=document.getElementById('edNome').value.trim();
   if(!title){ alert('Dê um nome para a cirurgia.'); document.getElementById('edNome').focus(); return; }
-  const items=[...document.querySelectorAll('#edMatRows .mat-row')].map(r=>({
+  const linhas=[...document.querySelectorAll('#edMatRows .mat-row')].map(r=>({
     name:r.querySelector('.nm').value.trim(),
-    qtyLabel:(r.querySelector('.qt').value.trim()||'1')
+    qtyLabel:(r.querySelector('.qt').value.trim()||'1'),
+    cat:r.querySelector('.cat-sel') ? r.querySelector('.cat-sel').value : 'auto'
   })).filter(it=>it.name);
-  if(!items.length){ alert('Adicione pelo menos um material.'); return; }
+  if(!linhas.length){ alert('Adicione pelo menos um material.'); return; }
+  // grava a categoria escolhida por material (global; "auto" remove a escolha manual)
+  let mudouCat=false;
+  linhas.forEach(it=>{ const k=norm(it.name);
+    if(it.cat && it.cat!=='auto'){ if(categoriasManuais[k]!==it.cat){ categoriasManuais[k]=it.cat; mudouCat=true; } }
+    else if(categoriasManuais[k]!==undefined){ delete categoriasManuais[k]; mudouCat=true; } });
+  if(mudouCat) salvarCategorias();
+  const items=linhas.map(it=>({name:it.name, qtyLabel:it.qtyLabel}));
   if(editId){
     const s=catalogo.find(x=>x.id===editId);
     if(s){ s.title=title; s.items=items; s.updatedAt=Date.now(); }
@@ -1228,6 +1260,7 @@ function semear(){
 }
 function init(){
   injetarIcones();
+  carregarCategorias();
   const carregado=carregarCatalogo();
   if(carregado){ catalogo=carregado; }
   else { semear(); salvarCatalogo(); }
