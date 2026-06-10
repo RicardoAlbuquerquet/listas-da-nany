@@ -166,17 +166,19 @@
   .mat-head .h-qt{ width:134px; text-align:center; } .mat-head .h-x{ width:36px; }
 
   .mat-rows{ display:flex; flex-direction:column; gap:8px; counter-reset:matc; }
-  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; counter-increment:matc; }
+  .mat-row{ display:flex; align-items:center; gap:8px; animation:rowIn .15s ease; counter-increment:matc;
+    border-radius:10px; transition:box-shadow .15s, background .15s; }
   @keyframes rowIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
-  .mat-row.dragging{ opacity:.55; }
-  .grip{ width:26px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    cursor:grab; color:var(--muted); font-size:11.5px; font-weight:700; border-radius:7px;
-    touch-action:none; user-select:none; -webkit-user-select:none; position:relative; }
-  .grip::before{ content:counter(matc); }
-  .grip::after{ content:"⋮⋮"; position:absolute; left:1px; top:50%; transform:translateY(-50%);
-    font-size:11px; letter-spacing:-2px; color:var(--line); }
-  .grip:hover{ background:var(--surface); color:var(--accent-d); }
-  .grip:active{ cursor:grabbing; }
+  .mat-row.dragging{ background:#fff; outline:1.5px solid var(--accent); outline-offset:1px;
+    box-shadow:0 14px 32px rgba(20,28,36,.22); position:relative; z-index:5; cursor:grabbing; }
+  .grip{ width:32px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center; gap:3px;
+    cursor:grab; color:var(--muted); font-size:11.5px; font-weight:700; border-radius:8px;
+    touch-action:none; user-select:none; -webkit-user-select:none; transition:background .12s, color .12s; }
+  .grip .gdots{ width:8px; height:14px; opacity:.6; transition:opacity .12s; }
+  .grip::after{ content:counter(matc); }
+  .grip:hover{ background:var(--surface); color:var(--accent); }
+  .grip:hover .gdots{ opacity:1; }
+  .grip:active{ cursor:grabbing; background:#e6eaee; }
   .mat-row .nm{ flex:1; min-width:0; }
   .qty-box{ display:flex; align-items:stretch; width:134px; height:40px; flex-shrink:0; border:1px solid var(--line);
     border-radius:10px; overflow:hidden; background:#fff; transition:border-color .12s, box-shadow .12s; }
@@ -886,7 +888,7 @@ function addMatRow(name='', qty='1', focus=false){
   const rows=document.getElementById('edMatRows');
   const div=document.createElement('div'); div.className='mat-row';
   div.innerHTML=`
-    <span class="grip" title="Arraste para reordenar" onpointerdown="gripPointerDown(event)"></span>
+    <span class="grip" title="Arraste para reordenar" onpointerdown="gripPointerDown(event)"><svg class="gdots" width="8" height="14" viewBox="0 0 8 14" aria-hidden="true"><g fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></g></svg></span>
     <input type="text" class="nm" placeholder="Nome do material" value="${esc2(name)}">
     <div class="qty-box">
       <button type="button" class="step minus" onclick="bumpQty(this,-1)" tabindex="-1">−</button>
@@ -922,15 +924,32 @@ function gripPointerMove(e){
   if(e.cancelable) e.preventDefault();
   const cont=document.getElementById('edMatRows'); if(!cont) return;
   const outros=[...cont.querySelectorAll('.mat-row:not(.dragging)')];
-  const depois=outros.find(r=>{ const rc=r.getBoundingClientRect(); return e.clientY < rc.top + rc.height/2; });
-  if(depois) cont.insertBefore(dragRow, depois); else cont.appendChild(dragRow);
+  const depois=outros.find(r=>{ const rc=r.getBoundingClientRect(); return e.clientY < rc.top + rc.height/2; }) || null;
+  if(depois===dragRow.nextElementSibling) return;   // já está nesta posição
+  flipReordenar(cont, ()=>{ if(depois) cont.insertBefore(dragRow, depois); else cont.appendChild(dragRow); });
 }
 function gripPointerUp(){
-  if(dragRow) dragRow.classList.remove('dragging');
+  if(dragRow){ dragRow.classList.remove('dragging');
+    const cont=document.getElementById('edMatRows');
+    if(cont) [...cont.children].forEach(el=>{ el.style.transition=''; el.style.transform=''; });
+  }
   dragRow=null;
   document.removeEventListener('pointermove', gripPointerMove);
   document.removeEventListener('pointerup', gripPointerUp);
   document.removeEventListener('pointercancel', gripPointerUp);
+}
+/* anima as outras linhas deslizando suavemente quando a ordem muda (técnica FLIP) */
+function flipReordenar(cont, mover){
+  const antes=new Map([...cont.children].map(el=>[el, el.getBoundingClientRect().top]));
+  mover();
+  for(const el of cont.children){
+    if(el===dragRow) continue;
+    const dy=antes.get(el)-el.getBoundingClientRect().top;
+    if(dy){
+      el.style.transition='none'; el.style.transform='translateY('+dy+'px)';
+      requestAnimationFrame(()=>{ el.style.transition='transform .18s ease'; el.style.transform=''; });
+    }
+  }
 }
 function bumpQty(btn, delta){
   const inp=btn.closest('.qty-box').querySelector('.qt');
